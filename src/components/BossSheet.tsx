@@ -24,6 +24,7 @@ export function BossSheet({ step, onClose }: { step: BossStep; onClose: () => vo
           {step.speciality ? <TypeBadge type={step.speciality} /> : null}
           {GROUP_LABELS[step.group]} · {step.name}
           {step.levelCap ? ` · Level cap ${step.levelCap}` : ''}
+          {step.scaled ? ' · scales with your cap' : ''}
         </span>
       }
       onClose={onClose}
@@ -59,6 +60,9 @@ function BossMonCard({ mon }: { mon: BossMon }) {
       <div style={{ textAlign: 'center' }}>
         <Sprite slug={mon.slug} size="lg" />
         <div className="tiny dim">Lv {mon.level}</div>
+        {mon.offset !== undefined ? (
+          <div className="tiny dim">cap {mon.offset === 0 ? '±0' : mon.offset}</div>
+        ) : null}
       </div>
       <div className="grow">
         <div className="spread">

@@ -32,6 +32,8 @@ export interface RouteStep {
 export interface BossMon {
   slug: Slug
   level: number
+  /** Set when the level is derived from the cap, e.g. -2 means "cap − 2". */
+  offset?: number
   ability: string | null
   held: string | null
   moves: string[]
@@ -47,6 +49,10 @@ export interface BossStep {
   trainer: string
   group: BossGroup
   speciality: string | null
+  /** True when this fight's levels track your badge cap rather than being fixed. */
+  scaled: boolean
+  /** The cap the scaled levels were resolved against. */
+  anchorCap?: number
   levelCap: number
   team: BossMon[]
 }

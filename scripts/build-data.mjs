@@ -232,13 +232,21 @@ function buildSteps(mode) {
     }
     const key = bossKeyFor(step.value, mode)
     const boss = league.radred[key]
-    const team = (boss?.pokemon ?? []).map((mon) => ({
-      slug: mon.name,
-      level: Number(mon.level) || 0,
-      ability: mon.ability || null,
-      held: mon.held || null,
-      moves: (mon.moves ?? []).filter(Boolean)
-    }))
+    const team = (boss?.pokemon ?? []).map((mon) => {
+      // Rematches, mini-bosses and most hardcore fights scale with your level
+      // cap; the source writes those as an offset ("+0", "-2") instead of a
+      // level. Resolving the offset needs the whole run order, so it happens
+      // in resolveScaledLevels below.
+      const scaled = /^[+-]/.test(String(mon.level))
+      return {
+        slug: mon.name,
+        level: scaled ? 0 : Number(mon.level) || 0,
+        ...(scaled ? { offset: Number(mon.level) } : {}),
+        ability: mon.ability || null,
+        held: mon.held || null,
+        moves: (mon.moves ?? []).filter(Boolean)
+      }
+    })
     return {
       kind: 'boss',
       id: `boss:${key}:${index}`,
@@ -247,10 +255,41 @@ function buildSteps(mode) {
       trainer: fixSpelling(boss?.name ?? step.boss ?? 'Trainer'),
       group: step.group ?? 'boss',
       speciality: boss?.speciality ?? null,
+      scaled: team.some((mon) => mon.offset !== undefined),
       levelCap: team.reduce((max, mon) => Math.max(max, mon.level), 0),
       team
     }
   })
+}
+
+/**
+ * Turns "-2" into a real level. The anchor is the badge cap in force at that
+ * point of the run: the ace level of the next gym leader with fixed levels,
+ * falling back to the last one behind when a fight sits after the 8th gym.
+ */
+function resolveScaledLevels(steps) {
+  const anchors = steps
+    .map((step, index) =>
+      step.kind === 'boss' && step.group === 'gym-leader' && !step.scaled && step.levelCap > 0
+        ? { index, cap: step.levelCap }
+        : null
+    )
+    .filter(Boolean)
+
+  for (const [index, step] of steps.entries()) {
+    if (step.kind !== 'boss' || !step.scaled) continue
+    const ahead = anchors.find((anchor) => anchor.index >= index)
+    const behind = [...anchors].reverse().find((anchor) => anchor.index < index)
+    const anchor = ahead ?? behind
+    if (!anchor) continue
+
+    step.anchorCap = anchor.cap
+    for (const mon of step.team) {
+      if (mon.offset !== undefined) mon.level = Math.max(1, anchor.cap + mon.offset)
+    }
+    step.levelCap = step.team.reduce((max, mon) => Math.max(max, mon.level), 0)
+  }
+  return steps
 }
 
 const slugify = (s) =>
@@ -268,8 +307,8 @@ const game = {
   abilities: patches.ability ?? {},
   items: patches.item ?? {},
   modes: {
-    normal: buildSteps('normal'),
-    hardcore: buildSteps('hardcore')
+    normal: resolveScaledLevels(buildSteps('normal')),
+    hardcore: resolveScaledLevels(buildSteps('hardcore'))
   }
 }
 
