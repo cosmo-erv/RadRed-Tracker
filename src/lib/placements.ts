@@ -6,6 +6,8 @@ const key = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, '')
 export interface PlacementResult {
   placements: Record<string, string>
   placed: number
+  /** Named fights the documented order already puts in the run. */
+  alreadyPlaced: number
   /** Lines nothing was recognised in, for the user to eyeball. */
   skipped: string[]
 }
@@ -37,6 +39,14 @@ export function parsePlacements(text: string, mode: Mode): PlacementResult {
     if (step.kind === 'route') places.set(key(step.name), step.id)
   }
 
+  // Fights the documented order already places live in the run itself, so a
+  // list naming them needs recognising without being pinned again.
+  const settled = new Set<string>()
+  for (const step of steps(mode)) {
+    if (step.kind !== 'boss') continue
+    for (const label of [`${step.name} ${step.trainer}`, step.trainer]) settled.add(key(label))
+  }
+
   const fights = new Map<string, string>()
   for (const fight of extras(mode)) {
     if (fight.group !== 'ace-trainer') continue
@@ -49,6 +59,7 @@ export function parsePlacements(text: string, mode: Mode): PlacementResult {
 
   const placements: Record<string, string> = {}
   const skipped: string[] = []
+  let alreadyPlaced = 0
   let current: string | null = null
 
   for (const rawLine of text.split(/\r?\n/)) {
@@ -65,6 +76,11 @@ export function parsePlacements(text: string, mode: Mode): PlacementResult {
 
     let pinned = 0
     for (const cell of cells) {
+      if (settled.has(key(cell))) {
+        pinned++
+        alreadyPlaced++
+        continue
+      }
       const fightId = fights.get(key(cell))
       if (!fightId) continue
       pinned++
@@ -78,5 +94,5 @@ export function parsePlacements(text: string, mode: Mode): PlacementResult {
     if (pinned === 0 && !placeOnly && skipped.length < 8) skipped.push(line.slice(0, 60))
   }
 
-  return { placements, placed: Object.keys(placements).length, skipped }
+  return { placements, placed: Object.keys(placements).length, alreadyPlaced, skipped }
 }

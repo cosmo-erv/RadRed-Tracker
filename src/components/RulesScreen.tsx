@@ -217,7 +217,13 @@ function PlacementImport({ toast }: { toast: (message: string) => void }) {
 
       {result ? (
         <div className="tiny dim stack" style={{ gap: 4 }}>
-          <span>{result.placed} pinned.</span>
+          <span>
+            {result.placed} pinned
+            {result.alreadyPlaced > 0
+              ? `, ${result.alreadyPlaced} already in the run from the documented order`
+              : ''}
+            .
+          </span>
           {result.skipped.length > 0 ? (
             <span style={{ color: 'var(--warn)' }}>
               Nothing recognised in: {result.skipped.join(' · ')}

@@ -74,7 +74,7 @@ export function BossScreen() {
       <header className="topbar">
         <h1>Fights</h1>
         <div className="sub">
-          {beaten}/{story.length} story fights beaten · {miniBosses} mini-bosses ·{' '}
+          {beaten}/{story.length} fights beaten · {miniBosses} mini-bosses ·{' '}
           {run.mode === 'hardcore' ? 'Hardcore' : 'Normal'}
         </div>
       </header>

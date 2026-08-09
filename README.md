@@ -7,9 +7,10 @@ and graveyard straight, and check what the next fight is about to throw at you.
 
 ## What it does
 
-**Run tab** — the whole game in order, mini-bosses included. Since no source
-gives their locations, they wait in a group at the end of the list until you pin
-one to the place you met it; from then on it sits there in the run.
+**Run tab** — the whole game in order, mini-bosses included and in place: 55 of
+them sit inline where the community documentation says you meet them, so Super
+Nerd Miguel is under Mt. Moon rather than in a list somewhere. The rest wait in
+a group at the end until you pin one to the place you met it.
 
 Route rows show how many species can appear there and what you caught; boss rows
 show the trainer, their first three Pokémon and the level cap that fight sets. Tick a boss off as you beat it. The
@@ -36,8 +37,8 @@ trainer you have just walked into can be looked up by name.
 Fights whose levels track your badge cap say so and show each Pokémon's offset;
 the handful of rosters that could not be confirmed against 4.1 are labelled
 rather than passed off as current. The trainer dumps carry no locations, so
-non-story fights are not placed on the map — fixed-level ones are tied to the
-stretch of the run their levels fit.
+fights outside the documented order are not placed on the map — fixed-level ones
+are tied to the stretch of the run their levels fit.
 
 **Rules tab** — normal vs hardcore rosters, clause toggles, JSON export / import
 so a run can move between phones or survive a Safari data wipe, and a paste box

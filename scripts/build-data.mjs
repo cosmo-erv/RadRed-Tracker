@@ -10,7 +10,7 @@
  * The generated files are committed, so `npm run build` never needs the network.
  */
 import { mkdir, readFile, writeFile, readdir } from 'node:fs/promises'
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -692,7 +692,7 @@ function buildExtraTrainers(mode, steps) {
 
   const entries = allTrainers[mode]
     .filter((trainer) => {
-      if (trainer.name.startsWith('Ace Trainer')) return trainer.team.length >= 5
+      if (trainer.name.startsWith('Ace Trainer')) return true
       if (BOSS_CLASSES.test(trainer.name)) return false
       const scaled = trainer.team.some((mon) => /Max Level/i.test(mon.level ?? ''))
       // One-Pokémon fights are noise unless they scale to your cap.
@@ -749,7 +749,170 @@ function buildExtraTrainers(mode, steps) {
   )
 }
 
-const matchLog = { matched: [], unverified: [] }
+/* ------------------------------------------------- documented fight order */
+
+/**
+ * The community documentation spreadsheet is the only source that gives the
+ * order, the location and the level cap of each fight. It is blocked from this
+ * build environment, so the relevant sheet is transcribed into
+ * scripts/data/fight-order.txt and read from there.
+ */
+function parseFightOrder() {
+  const file = readFileSync(resolve(root, 'scripts/data/fight-order.txt'), 'utf8')
+  return file
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line && !line.startsWith('#'))
+    .map((line, index) => {
+      const [name, cap, location, optional] = line.split('|').map((cell) => cell.trim())
+      return {
+        order: index,
+        name,
+        cap: Number(cap) || null,
+        location,
+        optional: optional === 'optional'
+      }
+    })
+}
+
+/**
+ * Docs location names against the route names the run actually uses. Several
+ * docs locations are interiors the route data has no step for (Silph Co. sits
+ * inside Saffron City), so each maps to a list and the first that exists in
+ * the current mode wins.
+ */
+const DOC_PLACES = {
+  'NUGGET BRIDGE': ['Route 24'],
+  'DIG HOUSE': ["Diglett's Cave"],
+  'GAME CORNER': ['Celadon City'],
+  'ROCKET HIDEOUT': ['Celadon City'],
+  'CELADON CITY HOTEL': ['Celadon City'],
+  'CINNABAR ISLAND LAB': ['Cinnabar Island'],
+  'CINNABAR ISLAND GYM': ['Cinnabar Island'],
+  'POKEMON MANSION 4F': ['Pokémon Mansion'],
+  'POKEMON TOWER': ['Pokémon Tower'],
+  'SILPH CO.': ['Saffron City'],
+  'ELITE FOUR': ['Indigo Plateau', 'Victory Road'],
+  CHAMPION: ['Indigo Plateau', 'Victory Road'],
+  'INDIGO PLATEAU': ['Indigo Plateau', 'Victory Road'],
+  'S.S. ANNE': ['S.S. Anne', 'Vermilion City'],
+  'VERMILLION CITY': ['Vermilion City'],
+  'MT. MOON': ['Mt. Moon']
+}
+
+/** Docs trainer names against the dump's, where the sheet abbreviates. */
+const DOC_TRAINERS = {
+  'CATCHER CALE': 'Bug Catcher Cale',
+  'BIRD KE. SEBASTIAN': 'Bird Keeper Sebastian',
+  'TAMER RAMIRO': 'Dragon Tamer Ramiro',
+  'BLACK BELT KETCHUP': '{PK}{MN} Trainer Ketchup',
+  'BEAUTY SAM': '{PK}{MN} Trainer Sam',
+  'BEAUTY SHELLY': '{PK}{MN} Trainer Shelly',
+  'DUMASS KID': 'Dumbass Gian',
+  'DUMASS JOJO FAN': 'Dumbass Jojo Fan',
+  'DUMASS CREATOR': 'Dumbass Creator',
+  'ACE HALEY': 'Lass Haley',
+  'ACE COLE': 'Tamer Cole',
+  GHOST: 'Channeler Rachel',
+  GUARD: 'Gatekeeper Owen',
+  'LEFT GUARD': 'Gatekeeper Logan',
+  'ACE NELLE': 'Ace Trainer Nelle',
+  'ACE WILTON': 'Ace Trainer Wilton'
+}
+
+const docKey = (value) => value.toLowerCase().replace(/[^a-z0-9]/g, '')
+
+/**
+ * Moves the mini-bosses the documentation places into the run itself, in the
+ * documented order, at the documented location, with the documented level cap
+ * as the anchor their scaled levels resolve against.
+ *
+ * Fights the sheet names but this build cannot resolve stay in the browsable
+ * list rather than being placed on a guess.
+ */
+function applyFightOrder(mode, orderedSteps, extraFights, log) {
+  const routesByName = new Map()
+  for (const step of orderedSteps) {
+    if (step.kind === 'route') routesByName.set(docKey(step.name), step)
+  }
+
+  const byName = new Map()
+  for (const fight of extraFights) {
+    for (const label of [`${fight.name} ${fight.trainer}`, fight.trainer]) {
+      const slot = byName.get(docKey(label)) ?? []
+      slot.push(fight)
+      byName.set(docKey(label), slot)
+    }
+  }
+
+  const taken = new Set()
+  const resolve1 = (rawName) => {
+    const mapped = DOC_TRAINERS[rawName] ?? rawName
+    for (const candidate of [mapped, mapped.replace(/^(ACE|BEAUTY)\s+/i, '')]) {
+      const options = (byName.get(docKey(candidate)) ?? []).filter((fight) => !taken.has(fight))
+      if (options.length === 0) continue
+      // A name like "GRUNT" matches several fights; the sheet only lists the
+      // mini-boss tier, so prefer one that scales with the cap.
+      return options.find((fight) => fight.scaled) ?? options[0]
+    }
+    return null
+  }
+
+  const placed = []
+  for (const entry of parseFightOrder()) {
+    const candidates = DOC_PLACES[entry.location] ?? [entry.location]
+    const place = candidates.map((name) => routesByName.get(docKey(name))).find(Boolean)
+
+    // "LOLA & SHEILA" is two trainers fought back to back in one spot.
+    const names = entry.name.split('&').map((part) => part.trim())
+    const fights = names.map(resolve1).filter(Boolean)
+
+    if (fights.length === 0 || !place) {
+      // Story fights are already in the run under their own entry; only report
+      // the ones that should have landed somewhere and did not.
+      if (fights.length > 0 && !place) log.unplaced.push(`${mode}: ${entry.name} → ${entry.location}?`)
+      continue
+    }
+
+    for (const fight of fights) {
+      taken.add(fight)
+      fight.optional = entry.optional
+      fight.docsCap = entry.cap
+      placed.push({ fight, place, order: entry.order })
+    }
+  }
+
+  // Insert each placed fight after its location, keeping documented order.
+  const afterStep = new Map()
+  for (const { fight, place, order } of placed.sort((a, b) => a.order - b.order)) {
+    if (!afterStep.has(place.id)) afterStep.set(place.id, [])
+    afterStep.get(place.id).push(fight)
+  }
+
+  const merged = []
+  for (const step of orderedSteps) {
+    merged.push(step)
+    for (const fight of afterStep.get(step.id) ?? []) merged.push(fight)
+  }
+
+  const placedIds = new Set(placed.map(({ fight }) => fight.id))
+  log.placed.push(`${mode}: ${placedIds.size} placed`)
+  return { steps: merged, remaining: extraFights.filter((fight) => !placedIds.has(fight.id)) }
+}
+
+/** Placed fights get their scaled levels from the documented cap. */
+function resolveDocsLevels(orderedSteps) {
+  for (const step of orderedSteps) {
+    if (step.kind !== 'boss' || !step.docsCap) continue
+    for (const mon of step.team) {
+      if (mon.offset !== undefined) mon.level = Math.max(1, step.docsCap + mon.offset)
+    }
+    step.levelCap = step.team.reduce((max, mon) => Math.max(max, mon.level), 0)
+  }
+  return orderedSteps
+}
+
+const matchLog = { matched: [], unverified: [], placed: [], unplaced: [] }
 const dumpAssignments = new Map()
 
 const normalSteps = resolveScaledLevels(
@@ -757,6 +920,19 @@ const normalSteps = resolveScaledLevels(
 )
 const hardcoreSteps = resolveScaledLevels(
   applyDumpTeams(resolveScaledLevels(buildSteps('hardcore')), 'hardcore', matchLog, dumpAssignments)
+)
+
+const normalOrder = applyFightOrder(
+  'normal',
+  normalSteps,
+  buildExtraTrainers('normal', normalSteps),
+  matchLog
+)
+const hardcoreOrder = applyFightOrder(
+  'hardcore',
+  hardcoreSteps,
+  buildExtraTrainers('hardcore', hardcoreSteps),
+  matchLog
 )
 
 const game = {
@@ -767,11 +943,11 @@ const game = {
   items: patches.item ?? {},
   // Legacy teams anchor the matching, then the 4.1 rosters replace them, then
   // level resolution runs again for the offsets the new teams brought with them.
-  modes: { normal: normalSteps, hardcore: hardcoreSteps },
-  extras: {
-    normal: buildExtraTrainers('normal', normalSteps),
-    hardcore: buildExtraTrainers('hardcore', hardcoreSteps)
-  }
+  modes: {
+    normal: resolveDocsLevels(normalOrder.steps),
+    hardcore: resolveDocsLevels(hardcoreOrder.steps)
+  },
+  extras: { normal: normalOrder.remaining, hardcore: hardcoreOrder.remaining }
 }
 
 await mkdir(resolve(root, 'src/data'), { recursive: true })
@@ -808,6 +984,8 @@ console.log(
     `${matchLog.unverified.length} left on the older data (flagged in-app)`
 )
 for (const entry of matchLog.unverified) console.log('  unverified:', entry)
+for (const entry of matchLog.placed) console.log('  order:', entry)
+for (const entry of matchLog.unplaced) console.log('  unplaced:', entry)
 await writeFile(resolve(cache, 'match-report.json'), JSON.stringify(matchLog, null, 2))
 
 console.log(
