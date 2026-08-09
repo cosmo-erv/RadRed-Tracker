@@ -1014,6 +1014,96 @@ function applyFightOrder(mode, orderedSteps, extraFights, log) {
   return { steps: merged, remaining: extraFights.filter((fight) => !placedIds.has(fight.id)) }
 }
 
+/* --------------------------------------------------------- rival branches */
+
+const STARTER_FAMILIES = {
+  grass: ['bulbasaur', 'ivysaur', 'venusaur'],
+  fire: ['charmander', 'charmeleon', 'charizard'],
+  water: ['squirtle', 'wartortle', 'blastoise']
+}
+
+/** The rival takes the starter that beats yours. */
+const PLAYER_FOR_RIVAL = { grass: 'water', fire: 'grass', water: 'fire' }
+
+function starterOf(trainer) {
+  const slugs = trainer.team.map((mon) => dumpSlug(mon.species))
+  for (const [type, family] of Object.entries(STARTER_FAMILIES)) {
+    if (slugs.some((slug) => family.includes(slug))) return type
+  }
+  return null
+}
+
+/**
+ * The rival's team depends on which starter you picked, and the dump stores
+ * the three branches as consecutive trainers that differ only in that line.
+ * Grouping them lets a run show the branch that matches its starter — and
+ * incidentally settles rival fights the scorer could never pin down, since it
+ * was choosing between three teams that are all "right".
+ */
+function rivalGroups(mode) {
+  const rivals = allTrainers[mode]
+    .filter((trainer) => /^(Rival|Champion)\s/.test(trainer.name))
+    .map((trainer) => ({ trainer, starter: starterOf(trainer) }))
+    .filter((entry) => entry.starter)
+    .sort((a, b) => a.trainer.id - b.trainer.id)
+
+  const groups = []
+  let current = []
+  for (const entry of rivals) {
+    const previous = current[current.length - 1]
+    const consecutive = previous && entry.trainer.id === previous.trainer.id + 1
+    const repeats = current.some((member) => member.starter === entry.starter)
+    if (!consecutive || repeats) {
+      if (current.length) groups.push(current)
+      current = []
+    }
+    current.push(entry)
+  }
+  if (current.length) groups.push(current)
+  return groups.filter((group) => group.length >= 2)
+}
+
+/** Attaches the three starter branches to each rival fight. */
+function applyRivalVariants(mode, orderedSteps, log) {
+  const groups = rivalGroups(mode)
+  const taken = new Set()
+
+  for (const step of orderedSteps) {
+    if (step.kind !== 'boss' || step.group !== 'rival') continue
+    // Brendan and May do not branch; only the player-named rival does.
+    if (!/gary|terry/i.test(step.trainer)) continue
+
+    let best = null
+    for (const group of groups) {
+      if (taken.has(group)) continue
+      const score = Math.max(...group.map((member) => matchScore(step, member.trainer)))
+      if (!best || score > best.score) best = { group, score }
+    }
+    if (!best) continue
+
+    taken.add(best.group)
+    step.variants = {}
+    for (const member of best.group) {
+      const player = PLAYER_FOR_RIVAL[member.starter]
+      const team = dumpTeam(member.trainer)
+      step.variants[player] = {
+        team,
+        levelCap: team.reduce((max, mon) => Math.max(max, mon.level), 0),
+        scaled: team.some((mon) => mon.offset !== undefined)
+      }
+    }
+
+    // Default to a branch so the fight still reads sensibly with no starter set.
+    const fallback = step.variants.water ?? Object.values(step.variants)[0]
+    step.team = fallback.team
+    step.levelCap = fallback.levelCap
+    step.scaled = fallback.scaled
+    step.verified = true
+    log.rivals.push(`${mode}: ${step.trainer} @${step.name} → ${Object.keys(step.variants).join('/')}`)
+  }
+  return orderedSteps
+}
+
 /** Placed fights get their scaled levels from the documented cap. */
 function resolveDocsLevels(orderedSteps) {
   for (const step of orderedSteps) {
@@ -1026,7 +1116,7 @@ function resolveDocsLevels(orderedSteps) {
   return orderedSteps
 }
 
-const matchLog = { matched: [], unverified: [], placed: [], unplaced: [] }
+const matchLog = { matched: [], unverified: [], placed: [], unplaced: [], rivals: [] }
 const dumpAssignments = new Map()
 
 const normalSteps = resolveScaledLevels(
@@ -1035,6 +1125,9 @@ const normalSteps = resolveScaledLevels(
 const hardcoreSteps = resolveScaledLevels(
   applyDumpTeams(resolveScaledLevels(buildSteps('hardcore')), 'hardcore', matchLog, dumpAssignments)
 )
+
+applyRivalVariants('normal', normalSteps, matchLog)
+applyRivalVariants('hardcore', hardcoreSteps, matchLog)
 
 const normalOrder = applyFightOrder(
   'normal',
@@ -1100,6 +1193,7 @@ console.log(
 for (const entry of matchLog.unverified) console.log('  unverified:', entry)
 for (const entry of matchLog.placed) console.log('  order:', entry)
 for (const entry of matchLog.unplaced) console.log('  unplaced:', entry)
+console.log(`  rivals:   ${matchLog.rivals.length} fights carry starter branches`)
 await writeFile(resolve(cache, 'match-report.json'), JSON.stringify(matchLog, null, 2))
 
 console.log(

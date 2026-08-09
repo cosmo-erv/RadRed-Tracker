@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { dex, extras, isBoss, levelCap, nextBoss, progress, steps } from '../lib/game'
+import { dex, extras, isBoss, levelCap, nextBoss, progress, steps, variantOf } from '../lib/game'
 import { actions, useRun } from '../lib/store'
 import type { BossStep, Encounter, RouteStep, Step } from '../lib/types'
 import { GROUP_COLORS, GROUP_LABELS, STATUS_META } from '../lib/display'
@@ -228,6 +228,8 @@ function BossRow({
   isNext: boolean
   onOpen: () => void
 }) {
+  const run = useRun()
+  const shown = variantOf(step, run.starter)
   return (
     <div
       className={`step boss${defeated ? ' done' : ''}`}
@@ -250,12 +252,12 @@ function BossRow({
         </span>
         <span className="meta truncate" style={{ display: 'block' }}>
           {GROUP_LABELS[step.group]} · {step.name}
-          {step.levelCap ? ` · Lv ${step.levelCap}` : ''}
+          {shown.levelCap ? ` · Lv ${shown.levelCap}` : ''}
           {step.verified === false ? ' · 4.0 data' : ''}
         </span>
       </button>
       <span className="row" style={{ gap: 4 }}>
-        {step.team.slice(0, 3).map((mon, index) => (
+        {shown.team.slice(0, 3).map((mon, index) => (
           <Sprite key={`${mon.slug}-${index}`} slug={mon.slug} size="sm" />
         ))}
       </span>

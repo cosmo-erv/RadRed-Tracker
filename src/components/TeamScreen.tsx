@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { bst, dex, levelCap, nextBoss, steps } from '../lib/game'
+import { bst, dex, levelCap, nextBoss, steps, variantOf } from '../lib/game'
 import { actions, PARTY_LIMIT, useRun } from '../lib/store'
 import { bestStab, defensiveProfile, multiplierClass, multiplierLabel } from '../lib/types-chart'
 import type { Encounter, Status } from '../lib/types'
@@ -82,7 +82,7 @@ export function TeamScreen() {
           <section className="stack">
             <h2 className="section-title">Party coverage vs {boss.trainer}</h2>
             <div className="card" style={{ padding: 12 }}>
-              {boss.team.map((mon, index) => {
+              {variantOf(boss, run.starter).team.map((mon, index) => {
                 const best = byStatus.party.reduce(
                   (top, member) =>
                     member.slug ? Math.max(top, bestStab(member.slug, mon.slug)) : top,

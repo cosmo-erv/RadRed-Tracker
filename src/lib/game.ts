@@ -1,6 +1,6 @@
 import gameJson from '../data/game.json'
 import dexJson from '../data/dex.json'
-import type { BossStep, DexEntry, Game, Mode, Run, Slug, Step } from './types'
+import type { BossStep, BossVariant, DexEntry, Game, Mode, Run, Slug, Starter, Step } from './types'
 
 export const GAME = gameJson as unknown as Game
 export const DEX = dexJson as unknown as Record<Slug, DexEntry>
@@ -25,6 +25,15 @@ export const steps = (mode: Mode): Step[] => GAME.modes[mode]
 export const extras = (mode: Mode): BossStep[] => GAME.extras[mode] ?? []
 
 export const isBoss = (step: Step): step is BossStep => step.kind === 'boss'
+
+/**
+ * The team you will actually face. Rival fights carry one roster per starter,
+ * because the rival takes the one that beats yours.
+ */
+export function variantOf(step: BossStep, starter: Starter | null): BossVariant {
+  const branch = starter ? step.variants?.[starter] : undefined
+  return branch ?? { team: step.team, levelCap: step.levelCap, scaled: step.scaled }
+}
 
 export const bst = (slug: Slug) =>
   Object.values(dex(slug).stats).reduce((sum, value) => sum + (value ?? 0), 0)
@@ -51,7 +60,9 @@ export function nextBoss(run: Run): BossStep | null {
 
 export function levelCap(run: Run): number | null {
   const boss = nextBoss(run)
-  return boss && boss.levelCap > 0 ? boss.levelCap : null
+  if (!boss) return null
+  const cap = variantOf(boss, run.starter).levelCap
+  return cap > 0 ? cap : null
 }
 
 export interface Progress {

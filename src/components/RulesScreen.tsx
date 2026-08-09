@@ -2,8 +2,8 @@ import { useRef, useState } from 'react'
 import { parsePlacements } from '../lib/placements'
 import { GAME } from '../lib/game'
 import { actions, useRun } from '../lib/store'
-import type { Mode } from '../lib/types'
-import { Toggle } from './ui'
+import type { Mode, Starter } from '../lib/types'
+import { Sprite, Toggle } from './ui'
 
 export function RulesScreen({ toast }: { toast: (message: string) => void }) {
   const run = useRun()
@@ -45,6 +45,35 @@ export function RulesScreen({ toast }: { toast: (message: string) => void }) {
                 onBlur={() => actions.rename(name.trim() || 'My Nuzlocke')}
               />
             </label>
+
+            <div className="stack" style={{ gap: 6 }}>
+              <span className="tiny dim">Your starter</span>
+              <div className="row" style={{ gap: 8 }}>
+                {(
+                  [
+                    ['grass', 'bulbasaur'],
+                    ['fire', 'charmander'],
+                    ['water', 'squirtle']
+                  ] as [Starter, string][]
+                ).map(([value, slug]) => (
+                  <button
+                    key={value}
+                    className={`btn grow${run.starter === value ? ' primary' : ''}`}
+                    style={{ flexDirection: 'column', minHeight: 72, gap: 0 }}
+                    onClick={() => actions.setStarter(run.starter === value ? null : value)}
+                  >
+                    <Sprite slug={slug} />
+                    <span className="tiny" style={{ textTransform: 'capitalize' }}>
+                      {value}
+                    </span>
+                  </button>
+                ))}
+              </div>
+              <p className="tiny dim">
+                The rival takes the starter that beats yours, so his teams change with this. Pick
+                water and every rival fight shows the Bulbasaur line.
+              </p>
+            </div>
 
             <div className="stack" style={{ gap: 6 }}>
               <span className="tiny dim">Difficulty</span>

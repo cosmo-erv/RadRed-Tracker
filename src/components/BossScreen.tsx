@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { extras, isBoss, steps } from '../lib/game'
+import { extras, isBoss, steps, variantOf } from '../lib/game'
 import { actions, useRun } from '../lib/store'
 import type { BossGroup, BossStep } from '../lib/types'
 import { GROUP_COLORS, GROUP_LABELS } from '../lib/display'
@@ -107,7 +107,9 @@ export function BossScreen() {
         ) : null}
 
         <div className="stack">
-          {visible.map((fight) => (
+          {visible.map((fight) => {
+            const shown = variantOf(fight, run.starter)
+            return (
             <div
               key={fight.id}
               className={`step boss${run.defeated[fight.id] ? ' done' : ''}`}
@@ -130,21 +132,22 @@ export function BossScreen() {
                   {fight.trainer}
                 </span>
                 <span className="meta truncate" style={{ display: 'block' }}>
-                  {fight.name} · {fight.team.length} Pokémon
-                  {fight.levelCap ? ` · Lv ${fight.levelCap}` : ''}
-                  {fight.scaled && !fight.levelCap ? ' · at your cap' : ''}
+                  {fight.name} · {shown.team.length} Pokémon
+                  {shown.levelCap ? ` · Lv ${shown.levelCap}` : ''}
+                  {shown.scaled && !shown.levelCap ? ' · at your cap' : ''}
                   {fight.segment ? ` · before ${fight.segment}` : ''}
                   {fight.verified === false ? ' · 4.0 data' : ''}
                   {run.placements[fight.id] ? ' · placed' : ''}
                 </span>
               </button>
               <span className="row" style={{ gap: 2 }}>
-                {fight.team.slice(0, 3).map((mon, index) => (
+                {shown.team.slice(0, 3).map((mon, index) => (
                   <Sprite key={`${mon.slug}-${index}`} slug={mon.slug} size="sm" />
                 ))}
               </span>
             </div>
-          ))}
+            )
+          })}
 
           {matches.length === 0 ? <p className="empty">No fights match that.</p> : null}
 

@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react'
-import type { Encounter, Mode, Rules, Run, Status } from './types'
+import type { Encounter, Mode, Rules, Run, Starter, Status } from './types'
 
 const KEY = 'radred.run.v1'
 
@@ -29,6 +29,7 @@ function freshRun(name = 'My Nuzlocke'): Run {
     encounters: {},
     defeated: {},
     placements: {},
+    starter: null,
     startedAt: now,
     updatedAt: now
   }
@@ -45,7 +46,8 @@ function load(): Run {
       ...parsed,
       rules: { ...freshRun().rules, ...parsed.rules },
       // Added after the first runs were saved.
-      placements: parsed.placements ?? {}
+      placements: parsed.placements ?? {},
+      starter: parsed.starter ?? null
     }
   } catch {
     return freshRun()
@@ -75,6 +77,10 @@ export const useRun = () => useSyncExternalStore(subscribe, () => run)
 export const actions = {
   rename(name: string) {
     commit({ ...run, name })
+  },
+
+  setStarter(starter: Starter | null) {
+    commit({ ...run, starter })
   },
 
   setMode(mode: Mode) {

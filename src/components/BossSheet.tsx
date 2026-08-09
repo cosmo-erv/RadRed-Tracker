@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { GAME, dex, label, steps } from '../lib/game'
+import { GAME, dex, label, steps, variantOf } from '../lib/game'
 import { actions, useRun } from '../lib/store'
 import { bestStab, multiplierClass, multiplierLabel } from '../lib/types-chart'
 import type { BossMon, BossStep, Encounter } from '../lib/types'
@@ -11,6 +11,7 @@ type Tab = 'team' | 'matchup'
 export function BossSheet({ step, onClose }: { step: BossStep; onClose: () => void }) {
   const run = useRun()
   const [tab, setTab] = useState<Tab>('team')
+  const { team, levelCap, scaled } = variantOf(step, run.starter)
 
   const yours = Object.values(run.encounters)
     .filter((encounter) => encounter.status === 'party' || encounter.status === 'box')
@@ -25,8 +26,9 @@ export function BossSheet({ step, onClose }: { step: BossStep; onClose: () => vo
           {GROUP_LABELS[step.group]}
           {/* Ace Trainers carry no location, so their name is just the group. */}
           {step.name && step.name !== GROUP_LABELS[step.group] ? ` · ${step.name}` : ''}
-          {step.levelCap ? ` · Level cap ${step.levelCap}` : ''}
-          {step.scaled ? ' · scales with your cap' : ''}
+          {levelCap ? ` · Level cap ${levelCap}` : ''}
+          {scaled ? ' · scales with your cap' : ''}
+          {step.variants ? ` · ${run.starter ? `your ${run.starter} start` : 'pick a starter in Rules'}` : ''}
         </span>
       }
       onClose={onClose}
@@ -42,7 +44,7 @@ export function BossSheet({ step, onClose }: { step: BossStep; onClose: () => vo
 
       <div className="scroller filters">
         <button aria-pressed={tab === 'team'} onClick={() => setTab('team')}>
-          Their team ({step.team.length})
+          Their team ({team.length})
         </button>
         <button aria-pressed={tab === 'matchup'} onClick={() => setTab('matchup')}>
           Matchups
@@ -51,12 +53,12 @@ export function BossSheet({ step, onClose }: { step: BossStep; onClose: () => vo
 
       {tab === 'team' ? (
         <div className="card">
-          {step.team.map((mon, index) => (
+          {team.map((mon, index) => (
             <BossMonCard key={`${mon.slug}-${index}`} mon={mon} />
           ))}
         </div>
       ) : (
-        <MatchupGrid team={step.team} yours={yours} />
+        <MatchupGrid team={team} yours={yours} />
       )}
     </Sheet>
   )

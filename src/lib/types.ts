@@ -67,6 +67,8 @@ export interface BossStep {
   verified?: boolean
   /** For fixed-level fights: the boss whose cap first covers this team. */
   segment?: string | null
+  /** Rival fights branch on your starter; keyed by the starter you picked. */
+  variants?: Partial<Record<Starter, BossVariant>>
   /** The cap the scaled levels were resolved against. */
   anchorCap?: number
   levelCap: number
@@ -75,6 +77,14 @@ export interface BossStep {
 
 export type Step = RouteStep | BossStep
 export type Mode = 'normal' | 'hardcore'
+/** Which starter the player took; the rival takes the one that beats it. */
+export type Starter = 'grass' | 'fire' | 'water'
+
+export interface BossVariant {
+  team: BossMon[]
+  levelCap: number
+  scaled: boolean
+}
 
 export interface Game {
   title: string
@@ -119,6 +129,8 @@ export interface Run {
   defeated: Record<string, boolean>
   /** Mini-boss id -> the run step you met it at. No source has their locations. */
   placements: Record<string, string>
+  /** Starter you picked, so rival fights show the branch you will face. */
+  starter: Starter | null
   startedAt: number
   updatedAt: number
 }

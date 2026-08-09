@@ -34,13 +34,16 @@ abilities, held items, all four moves — and a matchup grid crossing your Poké
 against theirs. Search spans every fight regardless of the active filter, so a
 trainer you have just walked into can be looked up by name.
 
+Rival fights carry all three starter branches and show the one you will face
+once you set your starter — pick water and the rival's line is Bulbasaur.
+
 Fights whose levels track your badge cap say so and show each Pokémon's offset;
 the handful of rosters that could not be confirmed against 4.1 are labelled
 rather than passed off as current. The trainer dumps carry no locations, so
 fights outside the documented order are not placed on the map — fixed-level ones
 are tied to the stretch of the run their levels fit.
 
-**Rules tab** — normal vs hardcore rosters, clause toggles, JSON export / import
+**Rules tab** — your starter, normal vs hardcore rosters, clause toggles, JSON export / import
 so a run can move between phones or survive a Safari data wipe, and a paste box
 for mini-boss locations: drop in a list from any guide and they are pinned into
 the run in one go.
