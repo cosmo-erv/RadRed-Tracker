@@ -432,15 +432,11 @@ for (const boss of Object.values(league.radred))
 for (const list of Object.values(aceTrainers))
   for (const trainer of list) for (const mon of trainer.team) usedSlugs.add(dumpSlug(mon.species))
 
-// Boss rosters get replaced with their 4.1 versions further down, which pulls
-// in species the older dataset never referenced (most of gen 9).
-const bossMatchNames = new Set(
-  Object.values(league.radred).map((boss) => matchName(boss.name ?? ''))
-)
+// Boss rosters get replaced with their 4.1 versions further down and the route
+// trainers are listed in full, so every species in the dumps needs an entry.
 for (const list of Object.values(allTrainers))
   for (const trainer of list)
-    if (bossMatchNames.has(bareName(trainer.name)))
-      for (const mon of trainer.team) usedSlugs.add(dumpSlug(mon.species))
+    for (const mon of trainer.team) usedSlugs.add(dumpSlug(mon.species))
 
 const dex = {}
 const spriteJobs = new Map() // slug -> ordered list of candidate sprite URLs
@@ -667,13 +663,35 @@ const slugify = (s) =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '')
 
+/** Trainer classes that are already covered as ordered boss fights. */
+const BOSS_CLASSES =
+  /^(Leader|Elite Four|Champion|Boss|Rocket Admin|Rival|Player|Professor|\{PK\}\{MN\} Trainer|\{PK\}\{MN\} Prof)/
+
 /**
- * Ace Trainers as boss-shaped entries. The dumps carry no location, so these
- * are not placed in the run order — they are browsed and ticked off from the
- * Bosses tab, sorted by level.
+ * Every fight the dumps know about that is not one of the ordered bosses:
+ * Ace Trainers, the cap-scaled "tough" trainers Radical Red sprinkles through
+ * the game (Super Nerd Miguel by the Mt. Moon fossils is one), and ordinary
+ * route trainers. The dumps carry no location, so these are browsed from the
+ * Bosses tab rather than placed in the run.
  */
-function buildAceTrainers(mode) {
-  return aceTrainers[mode]
+function buildExtraTrainers(mode, steps) {
+  // Fixed-level trainers can at least be tied to a stretch of the run: the
+  // first boss whose cap is not below their team.
+  const caps = steps
+    .filter((step) => step.kind === 'boss' && !step.scaled && step.levelCap > 0)
+    .map((step) => ({ cap: step.levelCap, trainer: step.trainer }))
+
+  const segmentFor = (level) =>
+    level > 0 ? (caps.find((entry) => entry.cap >= level)?.trainer ?? null) : null
+
+  const entries = allTrainers[mode]
+    .filter((trainer) => {
+      if (trainer.name.startsWith('Ace Trainer')) return trainer.team.length >= 5
+      if (BOSS_CLASSES.test(trainer.name)) return false
+      const scaled = trainer.team.some((mon) => /Max Level/i.test(mon.level ?? ''))
+      // One-Pokémon fights are noise unless they scale to your cap.
+      return scaled || trainer.team.length >= 2
+    })
     .map((trainer) => {
       const team = trainer.team
         .map((mon) => {
@@ -691,33 +709,49 @@ function buildAceTrainers(mode) {
         })
         .filter(Boolean)
 
+      const scaled = team.some((mon) => mon.offset !== undefined)
+      const ace = trainer.name.startsWith('Ace Trainer')
+      const levelCap = team.reduce((max, mon) => Math.max(max, mon.level), 0)
+      // The class is everything before the trainer's own name.
+      const [, className = trainer.name, given = ''] =
+        trainer.name.match(/^(.*?)\s+(\S+(?:\s&\s\S+)?)$/) ?? []
+
       return {
         kind: 'boss',
-        id: `ace:${trainer.id}`,
-        key: `ace-${trainer.id}`,
-        name: 'Ace Trainer',
-        trainer: trainer.name.replace(/^Ace Trainer\s*/, ''),
-        group: 'ace-trainer',
+        id: `t:${trainer.id}`,
+        key: `t-${trainer.id}`,
+        name: ace ? 'Ace Trainer' : className,
+        trainer: given || trainer.name,
+        group: ace ? 'ace-trainer' : scaled ? 'tough' : 'trainer',
         speciality: null,
         optional: true,
-        scaled: team.some((mon) => mon.offset !== undefined),
-        levelCap: team.reduce((max, mon) => Math.max(max, mon.level), 0),
+        verified: true,
+        scaled,
+        levelCap,
+        ...(scaled ? {} : { segment: segmentFor(levelCap) }),
         team
       }
     })
-    .filter((entry) => entry.team.length >= 5)
-    // Cap-scaled fights are the late-game ones, so they sort after the fixed
-    // levels rather than ahead of them on a levelCap of 0.
-    .sort(
-      (a, b) =>
-        Number(a.scaled) - Number(b.scaled) ||
-        a.levelCap - b.levelCap ||
-        a.trainer.localeCompare(b.trainer)
-    )
+    .filter((entry) => entry.team.length > 0)
+
+  // Cap-scaled fights have no level to place them by, so they sort last.
+  return entries.sort(
+    (a, b) =>
+      Number(a.scaled) - Number(b.scaled) ||
+      a.levelCap - b.levelCap ||
+      a.trainer.localeCompare(b.trainer)
+  )
 }
 
 const matchLog = { matched: [], unverified: [] }
 const dumpAssignments = new Map()
+
+const normalSteps = resolveScaledLevels(
+  applyDumpTeams(resolveScaledLevels(buildSteps('normal')), 'normal', matchLog, dumpAssignments)
+)
+const hardcoreSteps = resolveScaledLevels(
+  applyDumpTeams(resolveScaledLevels(buildSteps('hardcore')), 'hardcore', matchLog, dumpAssignments)
+)
 
 const game = {
   title: 'Radical Red 4.1',
@@ -725,24 +759,12 @@ const game = {
   moves: patches.move ?? {},
   abilities: patches.ability ?? {},
   items: patches.item ?? {},
-  modes: {
-    // Legacy teams first (they anchor the matching), then the 4.1 rosters, then
-    // level resolution again for the offsets the new teams brought with them.
-    normal: resolveScaledLevels(
-      applyDumpTeams(resolveScaledLevels(buildSteps('normal')), 'normal', matchLog, dumpAssignments)
-    ),
-    hardcore: resolveScaledLevels(
-      applyDumpTeams(
-        resolveScaledLevels(buildSteps('hardcore')),
-        'hardcore',
-        matchLog,
-        dumpAssignments
-      )
-    )
-  },
+  // Legacy teams anchor the matching, then the 4.1 rosters replace them, then
+  // level resolution runs again for the offsets the new teams brought with them.
+  modes: { normal: normalSteps, hardcore: hardcoreSteps },
   extras: {
-    normal: buildAceTrainers('normal'),
-    hardcore: buildAceTrainers('hardcore')
+    normal: buildExtraTrainers('normal', normalSteps),
+    hardcore: buildExtraTrainers('hardcore', hardcoreSteps)
   }
 }
 
@@ -784,7 +806,9 @@ await writeFile(resolve(cache, 'match-report.json'), JSON.stringify(matchLog, nu
 
 console.log(
   `game.json: ${game.modes.normal.length} normal steps, ${game.modes.hardcore.length} hardcore steps\n` +
-    `ace:       ${game.extras.normal.length} normal, ${game.extras.hardcore.length} hardcore\n` +
+    `trainers:  ${game.extras.normal.length} extra fights ` +
+    `(${game.extras.normal.filter((t) => t.group === 'tough').length} cap-scaled, ` +
+    `${game.extras.normal.filter((t) => t.group === 'ace-trainer').length} ace)\n` +
     `dex.json:  ${Object.keys(dex).length} species\n` +
     `sprites:   ${downloaded} downloaded, ${failed} missing`
 )

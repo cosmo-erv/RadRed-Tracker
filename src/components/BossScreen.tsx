@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { extras, isBoss, steps } from '../lib/game'
 import { actions, useRun } from '../lib/store'
 import type { BossGroup, BossStep } from '../lib/types'
@@ -6,49 +6,76 @@ import { GROUP_COLORS, GROUP_LABELS } from '../lib/display'
 import { BossSheet } from './BossSheet'
 import { Sprite } from './ui'
 
-const GROUPS: (BossGroup | 'all')[] = [
-  'all',
+/** "story" is every fight the run walks through; the rest are browsable. */
+type Filter = 'story' | BossGroup
+
+const FILTERS: Filter[] = [
+  'story',
   'gym-leader',
   'elite-four',
   'rival',
   'evil-team',
   'mini-boss',
-  'ace-trainer'
+  'tough',
+  'ace-trainer',
+  'trainer'
 ]
+
+const FILTER_LABELS: Record<Filter, string> = { ...GROUP_LABELS, story: 'Story' }
+
+const NOTES: Partial<Record<Filter, string>> = {
+  tough: 'Trainers whose levels scale with your badge cap — Radical Red builds these to hurt, and they are easy to walk into unprepared. No source lists where each one stands, so they are not placed on the map.',
+  'ace-trainer':
+    "Ace Trainers fight like bosses — five or six Pokémon, mega stones, cap levels. Their locations aren't in any reachable source either, so they are ordered by level.",
+  trainer:
+    'Every other trainer in the game, sorted by level. “Before X” is inferred from their team’s level, not from where they actually stand.'
+}
+
+/** Rows rendered before the list asks you to load more. */
+const PAGE = 60
 
 export function BossScreen() {
   const run = useRun()
-  const [group, setGroup] = useState<BossGroup | 'all'>('all')
+  const [filter, setFilter] = useState<Filter>('story')
   const [query, setQuery] = useState('')
+  const [limit, setLimit] = useState(PAGE)
   const [open, setOpen] = useState<BossStep | null>(null)
 
-  // Ace Trainers have no location in any source, so they live after the
-  // ordered fights rather than inside the run.
-  const bosses = useMemo(
+  const fights = useMemo(
     () => [...steps(run.mode).filter(isBoss), ...extras(run.mode)],
     [run.mode]
   )
-  const visible = useMemo(() => {
-    const term = query.trim().toLowerCase()
-    return bosses.filter(
-      (boss) =>
-        (group === 'all' || boss.group === group) &&
-        (!term ||
-          boss.trainer.toLowerCase().includes(term) ||
-          boss.name.toLowerCase().includes(term))
-    )
-  }, [bosses, group, query])
 
-  const ordered = bosses.filter((boss) => !boss.optional)
-  const beaten = ordered.filter((boss) => run.defeated[boss.id]).length
+  const term = query.trim().toLowerCase()
+
+  // Searching looks across every fight, not just the selected filter: the
+  // trainer you have just walked into is exactly the one you cannot classify.
+  const matches = useMemo(() => {
+    if (term)
+      return fights.filter(
+        (fight) =>
+          fight.trainer.toLowerCase().includes(term) ||
+          fight.name.toLowerCase().includes(term) ||
+          fight.team.some((mon) => mon.slug.includes(term))
+      )
+    return fights.filter((fight) =>
+      filter === 'story' ? !fight.optional : fight.group === filter
+    )
+  }, [fights, filter, term])
+
+  useEffect(() => setLimit(PAGE), [filter, query])
+
+  const story = fights.filter((fight) => !fight.optional)
+  const beaten = story.filter((fight) => run.defeated[fight.id]).length
+  const visible = matches.slice(0, limit)
 
   return (
     <>
       <header className="topbar">
-        <h1>Bosses</h1>
+        <h1>Fights</h1>
         <div className="sub">
-          {beaten} of {ordered.length} beaten · {bosses.length - ordered.length} optional ·{' '}
-          {run.mode === 'hardcore' ? 'Hardcore' : 'Normal'} teams
+          {beaten}/{story.length} story fights beaten · {fights.length - story.length} other
+          trainers · {run.mode === 'hardcore' ? 'Hardcore' : 'Normal'}
         </div>
       </header>
 
@@ -56,61 +83,75 @@ export function BossScreen() {
         <input
           type="search"
           inputMode="search"
-          placeholder="Search trainer or place…"
+          placeholder="Search trainer, place or Pokémon…"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
         />
 
         <div className="scroller filters">
-          {GROUPS.map((value) => (
-            <button key={value} aria-pressed={group === value} onClick={() => setGroup(value)}>
-              {value === 'all' ? 'All' : GROUP_LABELS[value]}
+          {FILTERS.map((value) => (
+            <button key={value} aria-pressed={filter === value} onClick={() => setFilter(value)}>
+              {FILTER_LABELS[value]}
             </button>
           ))}
         </div>
 
-        {group === 'ace-trainer' ? (
+        {term ? (
           <p className="tiny dim" style={{ margin: 0 }}>
-            Radical Red's Ace Trainers fight like bosses — five or six Pokémon, mega stones, cap
-            levels. No source lists where each one stands, so they are ordered by level rather
-            than by route.
+            Searching every fight, including route trainers.
+          </p>
+        ) : NOTES[filter] ? (
+          <p className="tiny dim" style={{ margin: 0 }}>
+            {NOTES[filter]}
           </p>
         ) : null}
 
         <div className="stack">
-          {visible.map((boss) => (
+          {visible.map((fight) => (
             <div
-              key={boss.id}
-              className={`step boss${run.defeated[boss.id] ? ' done' : ''}`}
-              style={{ ['--group' as string]: GROUP_COLORS[boss.group] }}
+              key={fight.id}
+              className={`step boss${run.defeated[fight.id] ? ' done' : ''}`}
+              style={{ ['--group' as string]: GROUP_COLORS[fight.group] }}
             >
               <button
-                className={`tickbox${run.defeated[boss.id] ? ' on' : ''}`}
-                aria-pressed={Boolean(run.defeated[boss.id])}
-                aria-label={`Mark ${boss.trainer} beaten`}
-                onClick={() => actions.toggleDefeated(boss.id)}
+                className={`tickbox${run.defeated[fight.id] ? ' on' : ''}`}
+                aria-pressed={Boolean(run.defeated[fight.id])}
+                aria-label={`Mark ${fight.trainer} beaten`}
+                onClick={() => actions.toggleDefeated(fight.id)}
               >
                 ✓
               </button>
-              <button className="grow truncate" style={{ textAlign: 'left' }} onClick={() => setOpen(boss)}>
+              <button
+                className="grow truncate"
+                style={{ textAlign: 'left' }}
+                onClick={() => setOpen(fight)}
+              >
                 <span className="title truncate" style={{ display: 'block' }}>
-                  {boss.trainer}
+                  {fight.trainer}
                 </span>
                 <span className="meta truncate" style={{ display: 'block' }}>
-                  {boss.name} · {boss.team.length} Pokémon
-                  {boss.levelCap ? ` · Lv ${boss.levelCap}` : ''}
-                  {boss.scaled && !boss.levelCap ? ' · at your cap' : ''}
-                  {boss.verified === false ? ' · 4.0 data' : ''}
+                  {fight.name} · {fight.team.length} Pokémon
+                  {fight.levelCap ? ` · Lv ${fight.levelCap}` : ''}
+                  {fight.scaled && !fight.levelCap ? ' · at your cap' : ''}
+                  {fight.segment ? ` · before ${fight.segment}` : ''}
+                  {fight.verified === false ? ' · 4.0 data' : ''}
                 </span>
               </button>
               <span className="row" style={{ gap: 2 }}>
-                {boss.team.slice(0, 3).map((mon, index) => (
+                {fight.team.slice(0, 3).map((mon, index) => (
                   <Sprite key={`${mon.slug}-${index}`} slug={mon.slug} size="sm" />
                 ))}
               </span>
             </div>
           ))}
-          {visible.length === 0 ? <p className="empty">No bosses match that.</p> : null}
+
+          {matches.length === 0 ? <p className="empty">No fights match that.</p> : null}
+
+          {matches.length > visible.length ? (
+            <button className="btn block" onClick={() => setLimit((value) => value + PAGE)}>
+              Show more ({matches.length - visible.length} left)
+            </button>
+          ) : null}
         </div>
       </div>
 

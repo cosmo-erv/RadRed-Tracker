@@ -23,12 +23,18 @@ boss's team. Tap a Pokémon to evolve it: the nickname, level, status and the
 route it came from carry over, and branching lines (Eevee, Wurmple, Applin) list
 every option.
 
-**Bosses tab** — all 49 ordered fights plus 33 optional Ace Trainers,
-searchable and filterable by kind. Each one opens with full teams: levels,
-typings, abilities, held items and all four moves, plus a matchup grid crossing
-your Pokémon against theirs. Fights whose levels track your badge cap say so and
-show each Pokémon's offset, and the handful of rosters that could not be
-confirmed against 4.1 are labelled rather than passed off as current.
+**Fights tab** — the 49 story fights, plus every other trainer in the game:
+Ace Trainers, the cap-scaled "tough" trainers Radical Red plants along the way,
+and ordinary route trainers. Each opens with full teams — levels, typings,
+abilities, held items, all four moves — and a matchup grid crossing your Pokémon
+against theirs. Search spans every fight regardless of the active filter, so a
+trainer you have just walked into can be looked up by name.
+
+Fights whose levels track your badge cap say so and show each Pokémon's offset;
+the handful of rosters that could not be confirmed against 4.1 are labelled
+rather than passed off as current. The trainer dumps carry no locations, so
+non-story fights are not placed on the map — fixed-level ones are tied to the
+stretch of the run their levels fit.
 
 **Rules tab** — normal vs hardcore rosters, clause toggles, and JSON export /
 import so a run can move between phones or survive a Safari data wipe.

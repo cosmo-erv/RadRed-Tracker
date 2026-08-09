@@ -10,7 +10,7 @@ type Tab = 'run' | 'team' | 'bosses' | 'rules'
 const TABS: { id: Tab; label: string; glyph: string }[] = [
   { id: 'run', label: 'Run', glyph: '🗺️' },
   { id: 'team', label: 'Team', glyph: '🎒' },
-  { id: 'bosses', label: 'Bosses', glyph: '🏅' },
+  { id: 'bosses', label: 'Fights', glyph: '🏅' },
   { id: 'rules', label: 'Rules', glyph: '⚙️' }
 ]
 

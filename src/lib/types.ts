@@ -48,6 +48,8 @@ export type BossGroup =
   | 'evil-team'
   | 'mini-boss'
   | 'ace-trainer'
+  | 'tough'
+  | 'trainer'
   | 'boss'
 
 export interface BossStep {
@@ -64,6 +66,8 @@ export interface BossStep {
   optional?: boolean
   /** False when the roster is still the older 4.0 data, unconfirmed for 4.1. */
   verified?: boolean
+  /** For fixed-level fights: the boss whose cap first covers this team. */
+  segment?: string | null
   /** The cap the scaled levels were resolved against. */
   anchorCap?: number
   levelCap: number

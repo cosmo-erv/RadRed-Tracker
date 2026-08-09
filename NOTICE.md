@@ -51,8 +51,9 @@ rosters are a game version behind. Fights that could not be matched to a dump
 entry with confidence keep their older roster and are flagged in the app rather
 than replaced with a guess.
 
-The dumps carry no location per trainer, so the Ace Trainer fights are listed by
-level rather than placed in the run order.
+The dumps carry no location per trainer, so non-story fights — Ace Trainers,
+cap-scaled "tough" trainers and route trainers — are listed by level rather than
+placed in the run order.
 
 ## Species data and sprites
 
