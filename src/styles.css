@@ -87,11 +87,26 @@ img {
 }
 
 /* -------------------------------------------------------------------- shell */
+:root {
+  /* The layout is designed for a phone; on anything wider it holds a single
+     centred column rather than stretching a one-handed UI across a desktop. */
+  --column: 520px;
+}
+
 .app {
   min-height: 100dvh;
+  max-width: var(--column);
+  margin: 0 auto;
   padding-bottom: calc(var(--tabbar) + 8px);
   padding-left: var(--safe-left);
   padding-right: var(--safe-right);
+}
+
+@media (min-width: 560px) {
+  .app {
+    border-left: 1px solid var(--line);
+    border-right: 1px solid var(--line);
+  }
 }
 
 .topbar {
@@ -129,6 +144,8 @@ img {
   left: 0;
   right: 0;
   bottom: 0;
+  max-width: var(--column);
+  margin-inline: auto;
   z-index: 30;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -493,6 +510,8 @@ img {
   left: 0;
   right: 0;
   bottom: 0;
+  max-width: var(--column);
+  margin-inline: auto;
   z-index: 41;
   max-height: 92dvh;
   display: flex;

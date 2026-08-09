@@ -5,11 +5,10 @@ export default defineConfig({
   plugins: [react()],
   build: {
     target: 'es2020',
-    // The dex/game data is a single chunk so the service worker can cache it once.
+    // One JS chunk: it keeps the single-file build (scripts/build-single.mjs)
+    // a straight inline, and both chunks were always loaded together anyway.
     rollupOptions: {
-      output: {
-        manualChunks: (id) => (id.includes('src/data/') ? 'gamedata' : undefined)
-      }
+      output: { manualChunks: undefined, inlineDynamicImports: true }
     }
   }
 })

@@ -9,7 +9,15 @@ const UNKNOWN: DexEntry = { name: '???', dex: 0, types: ['normal'], gen: 1, fami
 
 export const dex = (slug: Slug): DexEntry => DEX[slug] ?? UNKNOWN
 
-export const spriteUrl = (slug: Slug) => `${import.meta.env.BASE_URL}sprites/${slug}.png`
+declare global {
+  interface Window {
+    /** Single-file builds inline every sprite as a data URI under this map. */
+    __SPRITE_DATA__?: Record<string, string>
+  }
+}
+
+export const spriteUrl = (slug: Slug) =>
+  window.__SPRITE_DATA__?.[slug] ?? `${import.meta.env.BASE_URL}sprites/${slug}.png`
 
 export const steps = (mode: Mode): Step[] => GAME.modes[mode]
 

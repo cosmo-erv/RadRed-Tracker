@@ -9,7 +9,8 @@ createRoot(document.getElementById('root')!).render(
   </StrictMode>
 )
 
-if ('serviceWorker' in navigator && import.meta.env.PROD) {
+// Skipped for the single-file build, which has nothing to fetch.
+if ('serviceWorker' in navigator && import.meta.env.PROD && !window.__SPRITE_DATA__) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js').catch(() => {
       // Offline support is a bonus; the app works fine without it.
