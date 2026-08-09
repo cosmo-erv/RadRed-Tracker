@@ -3,6 +3,7 @@ import { RunScreen } from './components/RunScreen'
 import { TeamScreen } from './components/TeamScreen'
 import { BossScreen } from './components/BossScreen'
 import { RulesScreen } from './components/RulesScreen'
+import { storageAvailable } from './lib/store'
 
 type Tab = 'run' | 'team' | 'bosses' | 'rules'
 
@@ -39,6 +40,13 @@ export default function App() {
 
   return (
     <div className="app">
+      {storageAvailable ? null : (
+        <p className="banner" role="alert">
+          This browser is not letting the tracker save. Your run works now but will be lost on
+          reload — export it from Rules, or open the tracker in a normal Safari tab.
+        </p>
+      )}
+
       {tab === 'run' ? <RunScreen /> : null}
       {tab === 'team' ? <TeamScreen /> : null}
       {tab === 'bosses' ? <BossScreen /> : null}

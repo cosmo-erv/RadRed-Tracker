@@ -3,6 +3,21 @@ import type { Encounter, Mode, Rules, Run, Status } from './types'
 
 const KEY = 'radred.run.v1'
 
+/**
+ * Some contexts (private browsing, sandboxed frames) hand back a localStorage
+ * that throws on use. The run still works in memory there, but it will not
+ * survive a reload — the UI says so rather than losing work quietly.
+ */
+export const storageAvailable = (() => {
+  try {
+    localStorage.setItem('radred.probe', '1')
+    localStorage.removeItem('radred.probe')
+    return true
+  } catch {
+    return false
+  }
+})()
+
 function freshRun(name = 'My Nuzlocke'): Run {
   const now = Date.now()
   return {
@@ -38,7 +53,7 @@ function commit(next: Run) {
   try {
     localStorage.setItem(KEY, JSON.stringify(run))
   } catch {
-    // Private browsing / quota — the run still works for this session.
+    // Covered by the storageAvailable banner; the run continues in memory.
   }
   listeners.forEach((listener) => listener())
 }

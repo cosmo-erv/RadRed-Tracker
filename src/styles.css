@@ -365,6 +365,9 @@ img {
   image-rendering: pixelated;
   flex: 0 0 auto;
   transform: scale(1.5) translateY(-8%);
+  /* Scaled-up artwork spills past its box, so keep it out of hit-testing —
+     a tap near a tile edge must always reach the tile under the finger. */
+  pointer-events: none;
 }
 
 .sprite.sm {
@@ -778,6 +781,17 @@ img {
 
 .toggle[aria-pressed='true']::after {
   transform: translateX(20px);
+}
+
+.banner {
+  margin: 0;
+  padding: 12px 16px calc(12px + var(--safe-top));
+  padding-top: calc(var(--safe-top) + 12px);
+  background: #4a1f1d;
+  color: #ffd9d6;
+  font-size: 13px;
+  line-height: 1.4;
+  border-bottom: 1px solid color-mix(in srgb, var(--bad) 50%, transparent);
 }
 
 .empty {

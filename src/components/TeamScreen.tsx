@@ -172,9 +172,6 @@ function MemberSheet({
   onClose: () => void
 }) {
   const entry = encounter.slug ? dex(encounter.slug) : null
-  const [level, setLevel] = useState(encounter.level ? String(encounter.level) : '')
-  const [nickname, setNickname] = useState(encounter.nickname ?? '')
-
   const save = (patch: Partial<Encounter>) => actions.updateEncounter(encounter.locId, patch)
 
   return (
@@ -211,18 +208,19 @@ function MemberSheet({
         <input
           className="grow"
           placeholder="Nickname"
-          value={nickname}
-          onChange={(event) => setNickname(event.target.value)}
-          onBlur={() => save({ nickname: nickname.trim() || undefined })}
+          value={encounter.nickname ?? ''}
+          onChange={(event) => save({ nickname: event.target.value || undefined })}
         />
         <input
           style={{ width: 88 }}
           placeholder="Lv"
           inputMode="numeric"
           pattern="[0-9]*"
-          value={level}
-          onChange={(event) => setLevel(event.target.value.replace(/\D/g, '').slice(0, 3))}
-          onBlur={() => save({ level: level ? Number(level) : undefined })}
+          value={encounter.level ? String(encounter.level) : ''}
+          onChange={(event) => {
+            const digits = event.target.value.replace(/\D/g, '').slice(0, 3)
+            save({ level: digits ? Number(digits) : undefined })
+          }}
         />
       </div>
 
