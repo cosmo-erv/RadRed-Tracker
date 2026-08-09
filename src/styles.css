@@ -552,6 +552,12 @@ img {
   gap: 12px;
 }
 
+/* Flex children shrink by default, so a tall child (the species grid) would
+   crush its siblings instead of letting the sheet scroll. */
+.sheet-body > * {
+  flex-shrink: 0;
+}
+
 @keyframes rise {
   from {
     transform: translateY(100%);

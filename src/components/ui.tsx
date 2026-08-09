@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from 'react'
+import { useEffect, type ReactNode, type RefObject } from 'react'
 import { dex, spriteUrl } from '../lib/game'
 import { TYPE_COLORS } from '../lib/types-chart'
 import type { Slug } from '../lib/types'
@@ -73,13 +73,15 @@ export function Sheet({
   subtitle,
   onClose,
   children,
-  action
+  action,
+  bodyRef
 }: {
   title: string
   subtitle?: ReactNode
   onClose: () => void
   children: ReactNode
   action?: ReactNode
+  bodyRef?: RefObject<HTMLDivElement | null>
 }) {
   useEffect(() => {
     const previous = document.body.style.overflow
@@ -107,7 +109,9 @@ export function Sheet({
             Done
           </button>
         </header>
-        <div className="sheet-body">{children}</div>
+        <div className="sheet-body" ref={bodyRef}>
+          {children}
+        </div>
       </section>
     </>
   )

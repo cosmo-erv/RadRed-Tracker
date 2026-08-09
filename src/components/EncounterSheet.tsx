@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { DEX, dex, familiesCaught } from '../lib/game'
 import { actions, PARTY_LIMIT, partyMembers, useRun } from '../lib/store'
 import type { RouteStep, Slug, Status } from '../lib/types'
@@ -18,6 +18,13 @@ export function EncounterSheet({ step, onClose }: { step: RouteStep; onClose: ()
 
   const [query, setQuery] = useState('')
   const [showAll, setShowAll] = useState(false)
+  const body = useRef<HTMLDivElement>(null)
+
+  // Picking inserts the saved card above the grid; without this the sheet keeps
+  // its scroll offset and the card lands off-screen above your thumb.
+  useEffect(() => {
+    if (slug) body.current?.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [slug])
 
   const families = useMemo(() => familiesCaught(run), [run])
   const partyFull = partyMembers(run).length >= PARTY_LIMIT && encounter?.status !== 'party'
@@ -50,6 +57,7 @@ export function EncounterSheet({ step, onClose }: { step: RouteStep; onClose: ()
           : `${step.encounters.length} possible encounters`
       }
       onClose={onClose}
+      bodyRef={body}
     >
       {encounter && slug ? (
         <div className="card stack" style={{ padding: 12, gap: 12 }}>
