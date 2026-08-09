@@ -541,11 +541,21 @@ function evolutionsOf(slug) {
 }
 
 // Pull evolution targets into the dex so they have names, types and sprites.
-for (const slug of Object.keys(dex))
-  for (const target of evolutionsOf(slug)) addDexEntry(target)
+// This walks to a fixed point: a species added here needs its own evolutions
+// resolved too, or a line stops dead at whatever stage the game data mentioned
+// (Wurmple reaching Cascoon, but Cascoon never reaching Dustox).
+const pending = [...Object.keys(dex)]
+while (pending.length > 0) {
+  const slug = pending.pop()
+  for (const target of evolutionsOf(slug)) {
+    if (!dex[target] && addDexEntry(target)) pending.push(target)
+  }
+}
 
 for (const slug of Object.keys(dex)) {
-  const targets = evolutionsOf(slug).filter((target) => dex[target])
+  const targets = evolutionsOf(slug)
+  const missing = targets.filter((target) => !dex[target])
+  if (missing.length) throw new Error(`${slug} evolves into un-indexed ${missing.join(', ')}`)
   if (targets.length) dex[slug].evo = targets
 }
 
