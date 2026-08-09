@@ -11,9 +11,8 @@ and graveyard straight, and check what the next fight is about to throw at you.
 gives their locations, they wait in a group at the end of the list until you pin
 one to the place you met it; from then on it sits there in the run.
 
-**The order itself** — Route rows show how many species can
-appear there and what you caught; boss rows show the trainer, their first three
-Pokémon and the level cap that fight sets. Tick a boss off as you beat it. The
+Route rows show how many species can appear there and what you caught; boss rows
+show the trainer, their first three Pokémon and the level cap that fight sets. Tick a boss off as you beat it. The
 header always shows the next fight and its cap.
 
 **Encounter logging** — tap a route, pick from the species that actually appear
