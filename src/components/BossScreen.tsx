@@ -100,6 +100,7 @@ export function BossScreen() {
                   {boss.name} · {boss.team.length} Pokémon
                   {boss.levelCap ? ` · Lv ${boss.levelCap}` : ''}
                   {boss.scaled && !boss.levelCap ? ' · at your cap' : ''}
+                  {boss.verified === false ? ' · 4.0 data' : ''}
                 </span>
               </button>
               <span className="row" style={{ gap: 2 }}>

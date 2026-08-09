@@ -38,14 +38,21 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ```
 
-## Ace Trainer teams
+## Boss and Ace Trainer teams
 
-Ace Trainer rosters are parsed from Rudo2204's Pokémon Radical Red 4.1 trainer
-dumps ([normal mode](https://gist.github.com/Rudo2204/7f9e4a3ceaf077d623d3c37b1f921601),
+Trainer rosters are parsed from Rudo2204's Pokémon Radical Red 4.1 trainer dumps
+([normal mode](https://gist.github.com/Rudo2204/7f9e4a3ceaf077d623d3c37b1f921601),
 [hardcore mode](https://gist.github.com/Rudo2204/ed23cfda024998b566128318963ea7a5)),
-themselves based on earlier dumps by luckytyphlosion. The dumps carry no
-location for each trainer, so these fights are listed by level rather than
-placed in the run order.
+themselves based on earlier dumps by luckytyphlosion.
+
+The nuzlocke.app dataset above supplies the run order, encounter tables and which
+fight happens where; the 4.1 dumps supply the teams, because that dataset's
+rosters are a game version behind. Fights that could not be matched to a dump
+entry with confidence keep their older roster and are flagged in the app rather
+than replaced with a guess.
+
+The dumps carry no location per trainer, so the Ace Trainer fights are listed by
+level rather than placed in the run order.
 
 ## Species data and sprites
 

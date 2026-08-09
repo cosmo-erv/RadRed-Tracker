@@ -203,6 +203,7 @@ function BossRow({
         <span className="meta truncate" style={{ display: 'block' }}>
           {GROUP_LABELS[step.group]} · {step.name}
           {step.levelCap ? ` · Lv ${step.levelCap}` : ''}
+          {step.verified === false ? ' · 4.0 data' : ''}
         </span>
       </button>
       <span className="row" style={{ gap: 4 }}>

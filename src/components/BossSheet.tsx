@@ -31,6 +31,13 @@ export function BossSheet({ step, onClose }: { step: BossStep; onClose: () => vo
       }
       onClose={onClose}
     >
+      {step.verified === false ? (
+        <p className="tiny" style={{ margin: 0, color: 'var(--warn)' }}>
+          This roster is still the older 4.0 data — it could not be matched to a 4.1 fight, so
+          check it in-game before you plan around it.
+        </p>
+      ) : null}
+
       <div className="scroller filters">
         <button aria-pressed={tab === 'team'} onClick={() => setTab('team')}>
           Their team ({step.team.length})

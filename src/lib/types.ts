@@ -60,6 +60,8 @@ export interface BossStep {
   scaled: boolean
   /** Optional fights that sit outside the ordered run (Ace Trainers). */
   optional?: boolean
+  /** False when the roster is still the older 4.0 data, unconfirmed for 4.1. */
+  verified?: boolean
   /** The cap the scaled levels were resolved against. */
   anchorCap?: number
   levelCap: number

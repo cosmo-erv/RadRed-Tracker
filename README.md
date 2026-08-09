@@ -25,7 +25,8 @@ boss's team.
 searchable and filterable by kind. Each one opens with full teams: levels,
 typings, abilities, held items and all four moves, plus a matchup grid crossing
 your Pokémon against theirs. Fights whose levels track your badge cap say so and
-show each Pokémon's offset.
+show each Pokémon's offset, and the handful of rosters that could not be
+confirmed against 4.1 are labelled rather than passed off as current.
 
 **Rules tab** — normal vs hardcore rosters, clause toggles, and JSON export /
 import so a run can move between phones or survive a Safari data wipe.
@@ -62,8 +63,9 @@ npm run icons      # app icons
 ```
 
 `scripts/build-data.mjs` pulls Radical Red's route order, encounter tables and
-boss rosters from the open-source nuzlocke.app dataset, adds the Ace Trainer
-rosters from the 4.1 trainer dumps, joins everything with PokeAPI species data,
+fight list from the open-source nuzlocke.app dataset, replaces the rosters with
+their Radical Red 4.1 teams from the trainer dumps (that dataset is a version
+behind), adds the Ace Trainer fights, joins everything with PokeAPI species data,
 applies Radical Red's own stat/typing patches (including its Seviian forms and
 custom megas), resolves cap-relative levels ("Max Level - 2") against the badge
 cap in force at that point of the run, and downloads only the sprites the game

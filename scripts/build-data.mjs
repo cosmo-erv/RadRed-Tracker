@@ -174,6 +174,20 @@ function dumpSlug(name) {
 }
 
 const DUMP_ALIAS = {
+  'arceus-bug': 'arceus',
+  basculegion: 'basculegion-male',
+  dudunsparce: 'dudunsparce-two-segment',
+  landorus: 'landorus-incarnate',
+  'necrozma-dawn-wings': 'necrozma-dawn',
+  'necrozma-dusk-mane': 'necrozma-dusk',
+  'ogerpon-cornerstone': 'ogerpon-cornerstone-mask',
+  'ogerpon-hearthflame': 'ogerpon-hearthflame-mask',
+  'ogerpon-wellspring': 'ogerpon-wellspring-mask',
+  palafin: 'palafin-zero',
+  'pikachu-flying': 'pikachu',
+  squawkabilly: 'squawkabilly-green-plumage',
+  urshifu: 'urshifu-single-strike',
+  zygarde: 'zygarde-50',
   enamorus: 'enamorus-incarnate',
   keldeo: 'keldeo-ordinary',
   'keldeo-resolute': 'keldeo-resolute',
@@ -182,14 +196,173 @@ const DUMP_ALIAS = {
   morpeko: 'morpeko-full-belly'
 }
 
+const allTrainers = {}
 const aceTrainers = {}
 for (const [mode, gistId] of Object.entries(ACE_DUMPS)) {
   const page = await cached(`ace-${mode}.html`, `https://gist.github.com/Rudo2204/${gistId}`)
-  aceTrainers[mode] = parseDump(gistText(page)).filter(
+  allTrainers[mode] = parseDump(gistText(page)).filter((trainer) => trainer.team.length > 0)
+  aceTrainers[mode] = allTrainers[mode].filter(
     // Five or more Pokémon is what separates the boss-tier Ace Trainers from
     // the ordinary route trainers sharing the class name.
     (trainer) => trainer.name.startsWith('Ace Trainer') && trainer.team.length >= 5
   )
+}
+
+/* ------------------------------------------------- matching bosses to 4.1 */
+
+/** Strips the trainer class so "Leader Falkner" and "Falkner" line up. */
+const bareName = (name) =>
+  name
+    .replace(/^(Leader Lt\.|Leader|Elite Four|Champion|Boss|Rocket Admin|Rival|Player|\{PK\}\{MN\} Trainer)\s+/i, '')
+    .replace(/^Lt\.\s*/i, '')
+    .toLowerCase()
+    .trim()
+
+/** The nuzlocke.app names for the same people. */
+const TRAINER_ALIAS = {
+  gary: 'terry',
+  'admin archer': 'archer',
+  'admin ariana': 'ariana',
+  'champion gary': 'terry'
+}
+
+/** Boss label -> the name to look for in the dump. */
+function matchName(trainer) {
+  const base = trainer
+    .replace(/\s*\(.*\)\s*/g, '')
+    .replace(/\s*Rematch\s*/i, '')
+    .toLowerCase()
+    .trim()
+  const stripped = base.replace(/^lt\.\s*/, '')
+  return TRAINER_ALIAS[stripped] ?? stripped
+}
+
+/** How well a dump entry matches a roster we already have. */
+function matchScore(boss, candidate) {
+  const have = new Set(boss.team.map((mon) => mon.slug))
+  const theirs = new Set(candidate.team.map((mon) => dumpSlug(mon.species)))
+  const shared = [...have].filter((slug) => theirs.has(slug)).length
+  const union = new Set([...have, ...theirs]).size || 1
+
+  const levels = candidate.team.map((mon) => dumpLevel(mon.level))
+  const candidateScaled = levels.some((entry) => entry.offset !== undefined)
+  const anchor = boss.anchorCap ?? boss.levelCap
+  const candidateCap = Math.max(
+    ...levels.map((entry) => (entry.offset !== undefined ? anchor + entry.offset : entry.level))
+  )
+
+  return (
+    (shared / union) * 10 +
+    // A fight that scales like ours is far more likely to be the same fight.
+    (candidateScaled === Boolean(boss.scaled) ? 1.5 : -1.5) -
+    Math.min(Math.abs(candidateCap - boss.levelCap), 40) * 0.1 -
+    Math.abs(candidate.team.length - boss.team.length) * 0.3
+  )
+}
+
+/** Confidence floor for trusting a matched roster over the older data. */
+const MATCH_FLOOR = 3
+
+/** Builds a boss team out of a dump entry. */
+function dumpTeam(trainer) {
+  return trainer.team
+    .map((mon) => {
+      const { level = 0, offset } = dumpLevel(mon.level)
+      return {
+        slug: dumpSlug(mon.species),
+        level,
+        ...(offset !== undefined ? { offset } : {}),
+        ability: mon.ability ? slugify(mon.ability) : null,
+        held: mon.item && mon.item.toLowerCase() !== 'none' ? slugify(mon.item) : null,
+        moves: mon.moves.map(slugify)
+      }
+    })
+    .filter((mon) => dex[mon.slug])
+}
+
+function useDumpTeam(boss, trainer, mode) {
+  const team = dumpTeam(trainer)
+  const before = boss.team.map((mon) => mon.slug)
+  boss.team = team
+  boss.scaled = team.some((mon) => mon.offset !== undefined)
+  boss.levelCap = team.reduce((max, mon) => Math.max(max, mon.level), 0)
+  boss.verified = true
+  return {
+    mode,
+    trainer: boss.trainer,
+    id: trainer.id,
+    added: team.map((mon) => mon.slug).filter((slug) => !before.includes(slug)),
+    removed: before.filter((slug) => !team.some((mon) => mon.slug === slug))
+  }
+}
+
+/**
+ * Replaces boss rosters with their Radical Red 4.1 teams.
+ *
+ * Trainers appear in the dump several times (story fight, rematch, late-game
+ * version), so same-name fights are assigned one-to-one, best score first, and
+ * never share an entry. A fight whose best candidate is still a weak match
+ * keeps its older roster and is flagged unverified rather than guessed at.
+ *
+ * Both dumps use identical trainer ids, so hardcore does not re-run the guess:
+ * each hardcore fight takes the id its normal-mode counterpart matched.
+ */
+function applyDumpTeams(steps, mode, log, assignments) {
+  const trainers = allTrainers[mode]
+  const byId = new Map(trainers.map((trainer) => [trainer.id, trainer]))
+  const bosses = steps.filter((step) => step.kind === 'boss')
+
+  if (mode !== 'normal') {
+    for (const boss of bosses) {
+      const inherited = assignments.get(boss.key.replace(/_hard$/, ''))
+      const trainer = inherited === undefined ? null : byId.get(inherited)
+      if (trainer) log.matched.push({ ...useDumpTeam(boss, trainer, mode), inherited: true })
+      else log.unverified.push(`${mode}: ${boss.trainer}`)
+    }
+    return steps
+  }
+
+  const pool = new Map()
+  for (const trainer of trainers) {
+    const name = bareName(trainer.name)
+    if (!pool.has(name)) pool.set(name, [])
+    pool.get(name).push(trainer)
+  }
+
+  const byName = new Map()
+  for (const boss of bosses) {
+    const name = matchName(boss.trainer)
+    if (!byName.has(name)) byName.set(name, [])
+    byName.get(name).push(boss)
+  }
+
+  for (const [name, group] of byName) {
+    const candidates = pool.get(name) ?? []
+    if (candidates.length === 0) {
+      for (const boss of group) log.unverified.push(`${mode}: ${boss.trainer} (no “${name}” in dump)`)
+      continue
+    }
+
+    const pairs = []
+    for (const boss of group)
+      for (const candidate of candidates)
+        pairs.push({ boss, candidate, score: matchScore(boss, candidate) })
+    pairs.sort((a, b) => b.score - a.score)
+
+    const takenBosses = new Set()
+    const takenCandidates = new Set()
+    for (const { boss, candidate, score } of pairs) {
+      if (takenBosses.has(boss) || takenCandidates.has(candidate)) continue
+      if (score < MATCH_FLOOR) continue
+      takenBosses.add(boss)
+      takenCandidates.add(candidate)
+      assignments.set(boss.key, candidate.id)
+      log.matched.push({ ...useDumpTeam(boss, candidate, mode), score: Number(score.toFixed(1)) })
+    }
+    for (const boss of group)
+      if (!takenBosses.has(boss)) log.unverified.push(`${mode}: ${boss.trainer} (no confident match)`)
+  }
+  return steps
 }
 
 /** Slugs the Radical Red data uses that PokeAPI spells differently. */
@@ -258,6 +431,16 @@ for (const boss of Object.values(league.radred))
   for (const mon of boss.pokemon) usedSlugs.add(mon.name)
 for (const list of Object.values(aceTrainers))
   for (const trainer of list) for (const mon of trainer.team) usedSlugs.add(dumpSlug(mon.species))
+
+// Boss rosters get replaced with their 4.1 versions further down, which pulls
+// in species the older dataset never referenced (most of gen 9).
+const bossMatchNames = new Set(
+  Object.values(league.radred).map((boss) => matchName(boss.name ?? ''))
+)
+for (const list of Object.values(allTrainers))
+  for (const trainer of list)
+    if (bossMatchNames.has(bareName(trainer.name)))
+      for (const mon of trainer.team) usedSlugs.add(dumpSlug(mon.species))
 
 const dex = {}
 const spriteJobs = new Map() // slug -> ordered list of candidate sprite URLs
@@ -363,6 +546,8 @@ function buildSteps(mode) {
       speciality: boss?.speciality ?? null,
       scaled: team.some((mon) => mon.offset !== undefined),
       levelCap: team.reduce((max, mon) => Math.max(max, mon.level), 0),
+      // Flipped by applyDumpTeams when a 4.1 roster is matched to this fight.
+      verified: false,
       team
     }
   })
@@ -455,6 +640,9 @@ function buildAceTrainers(mode) {
     )
 }
 
+const matchLog = { matched: [], unverified: [] }
+const dumpAssignments = new Map()
+
 const game = {
   title: 'Radical Red 4.1',
   generatedAt: new Date().toISOString().slice(0, 10),
@@ -462,8 +650,19 @@ const game = {
   abilities: patches.ability ?? {},
   items: patches.item ?? {},
   modes: {
-    normal: resolveScaledLevels(buildSteps('normal')),
-    hardcore: resolveScaledLevels(buildSteps('hardcore'))
+    // Legacy teams first (they anchor the matching), then the 4.1 rosters, then
+    // level resolution again for the offsets the new teams brought with them.
+    normal: resolveScaledLevels(
+      applyDumpTeams(resolveScaledLevels(buildSteps('normal')), 'normal', matchLog, dumpAssignments)
+    ),
+    hardcore: resolveScaledLevels(
+      applyDumpTeams(
+        resolveScaledLevels(buildSteps('hardcore')),
+        'hardcore',
+        matchLog,
+        dumpAssignments
+      )
+    )
   },
   extras: {
     normal: buildAceTrainers('normal'),
@@ -499,6 +698,13 @@ for (const [slug, candidates] of spriteJobs) {
     console.warn('No sprite for', slug)
   }
 }
+
+console.log(
+  `bosses:    ${matchLog.matched.length} rosters updated to 4.1, ` +
+    `${matchLog.unverified.length} left on the older data (flagged in-app)`
+)
+for (const entry of matchLog.unverified) console.log('  unverified:', entry)
+await writeFile(resolve(cache, 'match-report.json'), JSON.stringify(matchLog, null, 2))
 
 console.log(
   `game.json: ${game.modes.normal.length} normal steps, ${game.modes.hardcore.length} hardcore steps\n` +
