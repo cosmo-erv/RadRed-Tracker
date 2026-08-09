@@ -39,8 +39,10 @@ rather than passed off as current. The trainer dumps carry no locations, so
 non-story fights are not placed on the map — fixed-level ones are tied to the
 stretch of the run their levels fit.
 
-**Rules tab** — normal vs hardcore rosters, clause toggles, and JSON export /
-import so a run can move between phones or survive a Safari data wipe.
+**Rules tab** — normal vs hardcore rosters, clause toggles, JSON export / import
+so a run can move between phones or survive a Safari data wipe, and a paste box
+for mini-boss locations: drop in a list from any guide and they are pinned into
+the run in one go.
 
 ## Built for iPhone
 

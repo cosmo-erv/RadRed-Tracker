@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { parsePlacements } from '../lib/placements'
 import { GAME } from '../lib/game'
 import { actions, useRun } from '../lib/store'
 import type { Mode } from '../lib/types'
@@ -135,6 +136,11 @@ export function RulesScreen({ toast }: { toast: (message: string) => void }) {
         </section>
 
         <section className="stack">
+          <h2 className="section-title">Place mini-bosses</h2>
+          <PlacementImport toast={toast} />
+        </section>
+
+        <section className="stack">
           <h2 className="section-title">Add to home screen</h2>
           <div className="card" style={{ padding: 12 }}>
             <p className="small muted" style={{ margin: 0 }}>
@@ -163,6 +169,68 @@ export function RulesScreen({ toast }: { toast: (message: string) => void }) {
         </section>
       </div>
     </>
+  )
+}
+
+/**
+ * Mini-boss locations are in no data source this app can reach, so a pasted
+ * list from a guide is the fastest way to get all of them pinned at once.
+ */
+function PlacementImport({ toast }: { toast: (message: string) => void }) {
+  const run = useRun()
+  const [text, setText] = useState('')
+  const [result, setResult] = useState<ReturnType<typeof parsePlacements> | null>(null)
+
+  const apply = () => {
+    const parsed = parsePlacements(text, run.mode)
+    setResult(parsed)
+    if (parsed.placed > 0) {
+      actions.placeMany(parsed.placements)
+      toast(`Placed ${parsed.placed} mini-boss${parsed.placed === 1 ? '' : 'es'}`)
+      setText('')
+    } else {
+      toast('Nothing matched — check the names')
+    }
+  }
+
+  return (
+    <div className="card stack" style={{ padding: 12, gap: 10 }}>
+      <p className="tiny dim" style={{ margin: 0 }}>
+        Paste a list of where you meet them and they will be pinned into your run. A line naming a
+        place switches location; the rest are trainers:
+      </p>
+      <pre className="tiny dim" style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
+        {'Mt. Moon: Super Nerd Miguel, Lass Ali\nRoute 4\nCamper Ethan'}
+      </pre>
+      <textarea
+        rows={5}
+        value={text}
+        placeholder="Mt. Moon: Super Nerd Miguel"
+        autoCapitalize="none"
+        autoCorrect="off"
+        spellCheck={false}
+        onChange={(event) => setText(event.target.value)}
+      />
+      <button className="btn primary block" onClick={apply} disabled={!text.trim()}>
+        Place them
+      </button>
+
+      {result ? (
+        <div className="tiny dim stack" style={{ gap: 4 }}>
+          <span>{result.placed} pinned.</span>
+          {result.unknownPlaces.length > 0 ? (
+            <span style={{ color: 'var(--warn)' }}>
+              Unknown places: {result.unknownPlaces.slice(0, 6).join(', ')}
+            </span>
+          ) : null}
+          {result.unknownTrainers.length > 0 ? (
+            <span style={{ color: 'var(--warn)' }}>
+              Unknown trainers: {result.unknownTrainers.slice(0, 6).join(', ')}
+            </span>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
   )
 }
 

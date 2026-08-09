@@ -120,6 +120,11 @@ export const actions = {
     commit({ ...run, placements })
   },
 
+  /** Bulk-pins mini-bosses, e.g. from a pasted list. */
+  placeMany(placements: Record<string, string>) {
+    commit({ ...run, placements: { ...run.placements, ...placements } })
+  },
+
   toggleDefeated(stepId: string) {
     const defeated = { ...run.defeated }
     if (defeated[stepId]) delete defeated[stepId]
