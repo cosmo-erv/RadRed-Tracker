@@ -28,6 +28,7 @@ function freshRun(name = 'My Nuzlocke'): Run {
     rules: { dupes: true, levelCap: true, hardcore: false },
     encounters: {},
     defeated: {},
+    placements: {},
     startedAt: now,
     updatedAt: now
   }
@@ -39,7 +40,13 @@ function load(): Run {
     if (!raw) return freshRun()
     const parsed = JSON.parse(raw) as Run
     if (parsed?.v !== 1) return freshRun()
-    return { ...freshRun(), ...parsed, rules: { ...freshRun().rules, ...parsed.rules } }
+    return {
+      ...freshRun(),
+      ...parsed,
+      rules: { ...freshRun().rules, ...parsed.rules },
+      // Added after the first runs were saved.
+      placements: parsed.placements ?? {}
+    }
   } catch {
     return freshRun()
   }
@@ -103,6 +110,14 @@ export const actions = {
 
   setStatus(locId: string, status: Status) {
     actions.updateEncounter(locId, { status })
+  },
+
+  /** Pins a mini-boss to the step you met it at, or unpins with null. */
+  placeFight(fightId: string, stepId: string | null) {
+    const placements = { ...run.placements }
+    if (stepId) placements[fightId] = stepId
+    else delete placements[fightId]
+    commit({ ...run, placements })
   },
 
   toggleDefeated(stepId: string) {

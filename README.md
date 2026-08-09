@@ -7,7 +7,11 @@ and graveyard straight, and check what the next fight is about to throw at you.
 
 ## What it does
 
-**Run tab** — the whole game in order. Route rows show how many species can
+**Run tab** — the whole game in order, mini-bosses included. Since no source
+gives their locations, they wait in a group at the end of the list until you pin
+one to the place you met it; from then on it sits there in the run.
+
+**The order itself** — Route rows show how many species can
 appear there and what you caught; boss rows show the trainer, their first three
 Pokémon and the level cap that fight sets. Tick a boss off as you beat it. The
 header always shows the next fight and its cap.

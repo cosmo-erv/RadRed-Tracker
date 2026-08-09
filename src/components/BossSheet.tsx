@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { GAME, dex, label } from '../lib/game'
-import { useRun } from '../lib/store'
+import { GAME, dex, label, steps } from '../lib/game'
+import { actions, useRun } from '../lib/store'
 import { bestStab, multiplierClass, multiplierLabel } from '../lib/types-chart'
 import type { BossMon, BossStep, Encounter } from '../lib/types'
 import { GROUP_LABELS } from '../lib/display'
@@ -31,6 +31,8 @@ export function BossSheet({ step, onClose }: { step: BossStep; onClose: () => vo
       }
       onClose={onClose}
     >
+      {step.optional ? <PlaceInRun step={step} /> : null}
+
       {step.verified === false ? (
         <p className="tiny" style={{ margin: 0, color: 'var(--warn)' }}>
           This roster is still the older 4.0 data — it could not be matched to a 4.1 fight, so
@@ -57,6 +59,35 @@ export function BossSheet({ step, onClose }: { step: BossStep; onClose: () => vo
         <MatchupGrid team={step.team} yours={yours} />
       )}
     </Sheet>
+  )
+}
+
+/**
+ * Mini-bosses have no location in any source, so the run pins them by hand.
+ * A plain select is the right control here — iOS gives it a native wheel.
+ */
+function PlaceInRun({ step }: { step: BossStep }) {
+  const run = useRun()
+  const placed = run.placements[step.id] ?? ''
+  const places = steps(run.mode).filter((entry) => entry.kind === 'route')
+
+  return (
+    <label className="stack" style={{ gap: 6 }}>
+      <span className="tiny dim">
+        {placed ? 'Placed in your run at' : 'Met this somewhere? Pin it to your run'}
+      </span>
+      <select
+        value={placed}
+        onChange={(event) => actions.placeFight(step.id, event.target.value || null)}
+      >
+        <option value="">Not placed</option>
+        {places.map((place) => (
+          <option key={place.id} value={place.id}>
+            {place.name}
+          </option>
+        ))}
+      </select>
+    </label>
   )
 }
 

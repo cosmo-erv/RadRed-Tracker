@@ -117,6 +117,8 @@ export interface Run {
   rules: Rules
   encounters: Record<string, Encounter>
   defeated: Record<string, boolean>
+  /** Mini-boss id -> the run step you met it at. No source has their locations. */
+  placements: Record<string, string>
   startedAt: number
   updatedAt: number
 }

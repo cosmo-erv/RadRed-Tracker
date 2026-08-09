@@ -135,6 +135,7 @@ export function BossScreen() {
                   {fight.scaled && !fight.levelCap ? ' · at your cap' : ''}
                   {fight.segment ? ` · before ${fight.segment}` : ''}
                   {fight.verified === false ? ' · 4.0 data' : ''}
+                  {run.placements[fight.id] ? ' · placed' : ''}
                 </span>
               </button>
               <span className="row" style={{ gap: 2 }}>

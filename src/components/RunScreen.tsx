@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
-import { dex, isBoss, levelCap, nextBoss, progress, steps } from '../lib/game'
+import { dex, extras, isBoss, levelCap, nextBoss, progress, steps } from '../lib/game'
 import { actions, useRun } from '../lib/store'
-import type { BossStep, Encounter, RouteStep } from '../lib/types'
+import type { BossStep, Encounter, RouteStep, Step } from '../lib/types'
 import { GROUP_COLORS, GROUP_LABELS, STATUS_META } from '../lib/display'
 import { EncounterSheet } from './EncounterSheet'
 import { BossSheet } from './BossSheet'
@@ -13,6 +13,7 @@ export function RunScreen() {
   const run = useRun()
   const [filter, setFilter] = useState<Filter>('all')
   const [openRoute, setOpenRoute] = useState<RouteStep | null>(null)
+  const [shown, setShown] = useState(20)
   const [openBoss, setOpenBoss] = useState<BossStep | null>(null)
 
   const all = steps(run.mode)
@@ -20,14 +21,37 @@ export function RunScreen() {
   const cap = levelCap(run)
   const stats = progress(run)
 
+  // Mini-bosses have no location in any source, so they sit where you pinned
+  // them and otherwise wait in a group at the end of the run.
+  const miniBosses = useMemo(
+    () => extras(run.mode).filter((fight) => fight.group === 'ace-trainer'),
+    [run.mode]
+  )
+
+  const { ordered, unplaced } = useMemo(() => {
+    const placedBy = new Map<string, BossStep[]>()
+    const waiting: BossStep[] = []
+    for (const fight of miniBosses) {
+      const stepId = run.placements[fight.id]
+      if (!stepId) waiting.push(fight)
+      else placedBy.set(stepId, [...(placedBy.get(stepId) ?? []), fight])
+    }
+    const list: Step[] = []
+    for (const step of all) {
+      list.push(step)
+      for (const fight of placedBy.get(step.id) ?? []) list.push(fight)
+    }
+    return { ordered: list, unplaced: waiting }
+  }, [all, miniBosses, run.placements])
+
   const visible = useMemo(() => {
-    if (filter === 'bosses') return all.filter(isBoss)
+    if (filter === 'bosses') return ordered.filter(isBoss)
     if (filter === 'todo')
-      return all.filter((step) =>
+      return ordered.filter((step) =>
         isBoss(step) ? !run.defeated[step.id] : !run.encounters[step.id]
       )
-    return all
-  }, [all, filter, run])
+    return ordered
+  }, [ordered, filter, run])
 
   const percent = Math.round((stats.bosses / Math.max(stats.totalBosses, 1)) * 100)
 
@@ -119,6 +143,30 @@ export function RunScreen() {
             <p className="empty">Nothing left here — try another filter.</p>
           ) : null}
         </div>
+
+        {filter !== 'todo' && unplaced.length > 0 ? (
+          <section className="stack">
+            <h2 className="section-title">Mini-bosses · not placed yet</h2>
+            <p className="tiny dim" style={{ margin: 0 }}>
+              No source lists where these stand. Open one and pin it to the place you met it and it
+              will sit there in the run from then on.
+            </p>
+            {unplaced.slice(0, shown).map((fight) => (
+              <BossRow
+                key={fight.id}
+                step={fight}
+                defeated={Boolean(run.defeated[fight.id])}
+                isNext={false}
+                onOpen={() => setOpenBoss(fight)}
+              />
+            ))}
+            {unplaced.length > shown ? (
+              <button className="btn block" onClick={() => setShown((value) => value + 20)}>
+                Show more ({unplaced.length - shown} left)
+              </button>
+            ) : null}
+          </section>
+        ) : null}
       </div>
 
       {openRoute ? <EncounterSheet step={openRoute} onClose={() => setOpenRoute(null)} /> : null}
