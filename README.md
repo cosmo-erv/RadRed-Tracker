@@ -23,9 +23,9 @@ boss's team. Tap a Pokémon to evolve it: the nickname, level, status and the
 route it came from carry over, and branching lines (Eevee, Wurmple, Applin) list
 every option.
 
-**Fights tab** — the 49 story fights, plus every other trainer in the game:
-Ace Trainers, the cap-scaled "tough" trainers Radical Red plants along the way,
-and ordinary route trainers. Each opens with full teams — levels, typings,
+**Fights tab** — the 49 story fights, the 102 mini-bosses (Ace Trainers and
+every other trainer whose levels scale with your badge cap, whatever their
+trainer class), and 425 ordinary route trainers. Each opens with full teams — levels, typings,
 abilities, held items, all four moves — and a matchup grid crossing your Pokémon
 against theirs. Search spans every fight regardless of the active filter, so a
 trainer you have just walked into can be looked up by name.

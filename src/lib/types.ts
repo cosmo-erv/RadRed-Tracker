@@ -48,7 +48,6 @@ export type BossGroup =
   | 'evil-team'
   | 'mini-boss'
   | 'ace-trainer'
-  | 'tough'
   | 'trainer'
   | 'boss'
 

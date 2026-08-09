@@ -668,11 +668,17 @@ const BOSS_CLASSES =
   /^(Leader|Elite Four|Champion|Boss|Rocket Admin|Rival|Player|Professor|\{PK\}\{MN\} Trainer|\{PK\}\{MN\} Prof)/
 
 /**
- * Every fight the dumps know about that is not one of the ordered bosses:
- * Ace Trainers, the cap-scaled "tough" trainers Radical Red sprinkles through
- * the game (Super Nerd Miguel by the Mt. Moon fossils is one), and ordinary
- * route trainers. The dumps carry no location, so these are browsed from the
- * Bosses tab rather than placed in the run.
+ * Every fight the dumps know about that is not one of the ordered bosses.
+ *
+ * Two tiers, and the dumps separate them cleanly: Radical Red scales the
+ * levels of its mini-bosses to your badge cap ("Max Level - 3") while ordinary
+ * route trainers sit at fixed levels below it. Ace Trainers count as
+ * mini-bosses whichever way their levels are written — that is how the
+ * community docs class them, and Super Nerd Miguel by the Mt. Moon fossils
+ * belongs to the same tier despite his trainer class.
+ *
+ * The dumps carry no location, so these are browsed rather than placed in
+ * the run.
  */
 function buildExtraTrainers(mode, steps) {
   // Fixed-level trainers can at least be tied to a stretch of the run: the
@@ -722,7 +728,7 @@ function buildExtraTrainers(mode, steps) {
         key: `t-${trainer.id}`,
         name: ace ? 'Ace Trainer' : className,
         trainer: given || trainer.name,
-        group: ace ? 'ace-trainer' : scaled ? 'tough' : 'trainer',
+        group: ace || scaled ? 'ace-trainer' : 'trainer',
         speciality: null,
         optional: true,
         verified: true,
@@ -806,9 +812,8 @@ await writeFile(resolve(cache, 'match-report.json'), JSON.stringify(matchLog, nu
 
 console.log(
   `game.json: ${game.modes.normal.length} normal steps, ${game.modes.hardcore.length} hardcore steps\n` +
-    `trainers:  ${game.extras.normal.length} extra fights ` +
-    `(${game.extras.normal.filter((t) => t.group === 'tough').length} cap-scaled, ` +
-    `${game.extras.normal.filter((t) => t.group === 'ace-trainer').length} ace)\n` +
+    `trainers:  ${game.extras.normal.filter((t) => t.group === 'ace-trainer').length} mini-bosses, ` +
+    `${game.extras.normal.filter((t) => t.group === 'trainer').length} route trainers\n` +
     `dex.json:  ${Object.keys(dex).length} species\n` +
     `sprites:   ${downloaded} downloaded, ${failed} missing`
 )

@@ -6,8 +6,7 @@ export const GROUP_COLORS: Record<BossGroup, string> = {
   rival: '#3a8ce0',
   'evil-team': '#6a5548',
   'mini-boss': '#e2a33c',
-  'ace-trainer': '#3fb8a6',
-  tough: '#e2703a',
+  'ace-trainer': '#e2703a',
   trainer: '#7d716f',
   boss: '#9fa19f'
 }
@@ -17,9 +16,8 @@ export const GROUP_LABELS: Record<BossGroup, string> = {
   'elite-four': 'Elite Four',
   rival: 'Rival',
   'evil-team': 'Team Rocket',
-  'mini-boss': 'Mini-boss',
-  'ace-trainer': 'Ace Trainer',
-  tough: 'Tough',
+  'mini-boss': 'Johto Leader',
+  'ace-trainer': 'Mini-boss',
   trainer: 'Route trainer',
   boss: 'Boss'
 }

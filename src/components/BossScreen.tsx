@@ -11,24 +11,23 @@ type Filter = 'story' | BossGroup
 
 const FILTERS: Filter[] = [
   'story',
+  'ace-trainer',
   'gym-leader',
   'elite-four',
   'rival',
   'evil-team',
   'mini-boss',
-  'tough',
-  'ace-trainer',
   'trainer'
 ]
 
 const FILTER_LABELS: Record<Filter, string> = { ...GROUP_LABELS, story: 'Story' }
 
 const NOTES: Partial<Record<Filter, string>> = {
-  tough: 'Trainers whose levels scale with your badge cap — Radical Red builds these to hurt, and they are easy to walk into unprepared. No source lists where each one stands, so they are not placed on the map.',
   'ace-trainer':
-    "Ace Trainers fight like bosses — five or six Pokémon, mega stones, cap levels. Their locations aren't in any reachable source either, so they are ordered by level.",
+    'The fights built to end runs: Ace Trainers and every trainer whose levels scale with your badge cap, whatever their class — Super Nerd Miguel by the Mt. Moon fossils is one. No source lists where each stands, so they are not placed on the map.',
+  'mini-boss': 'The Johto leaders, placed in the run where you meet them.',
   trainer:
-    'Every other trainer in the game, sorted by level. “Before X” is inferred from their team’s level, not from where they actually stand.'
+    'Ordinary trainers, sorted by level. “Before X” is inferred from their team’s level, not from where they actually stand.'
 }
 
 /** Rows rendered before the list asks you to load more. */
@@ -66,6 +65,7 @@ export function BossScreen() {
   useEffect(() => setLimit(PAGE), [filter, query])
 
   const story = fights.filter((fight) => !fight.optional)
+  const miniBosses = fights.filter((fight) => fight.group === 'ace-trainer').length
   const beaten = story.filter((fight) => run.defeated[fight.id]).length
   const visible = matches.slice(0, limit)
 
@@ -74,8 +74,8 @@ export function BossScreen() {
       <header className="topbar">
         <h1>Fights</h1>
         <div className="sub">
-          {beaten}/{story.length} story fights beaten · {fights.length - story.length} other
-          trainers · {run.mode === 'hardcore' ? 'Hardcore' : 'Normal'}
+          {beaten}/{story.length} story fights beaten · {miniBosses} mini-bosses ·{' '}
+          {run.mode === 'hardcore' ? 'Hardcore' : 'Normal'}
         </div>
       </header>
 
