@@ -21,9 +21,11 @@ Dupes-clause candidates are flagged before you commit to them.
 outgrown the next boss, defensive type profiles, and a coverage read on the next
 boss's team.
 
-**Bosses tab** — all 49 fights, searchable and filterable by kind. Each one opens
-with full teams: levels, typings, abilities, held items and all four moves, plus
-a matchup grid crossing your Pokémon against theirs.
+**Bosses tab** — all 49 ordered fights plus 33 optional Ace Trainers,
+searchable and filterable by kind. Each one opens with full teams: levels,
+typings, abilities, held items and all four moves, plus a matchup grid crossing
+your Pokémon against theirs. Fights whose levels track your badge cap say so and
+show each Pokémon's offset.
 
 **Rules tab** — normal vs hardcore rosters, clause toggles, and JSON export /
 import so a run can move between phones or survive a Safari data wipe.
@@ -60,9 +62,11 @@ npm run icons      # app icons
 ```
 
 `scripts/build-data.mjs` pulls Radical Red's route order, encounter tables and
-boss rosters from the open-source nuzlocke.app dataset, joins them with PokeAPI
-species data, applies Radical Red's own stat/typing patches (including its
-Seviian forms and custom megas), and downloads only the sprites the game
+boss rosters from the open-source nuzlocke.app dataset, adds the Ace Trainer
+rosters from the 4.1 trainer dumps, joins everything with PokeAPI species data,
+applies Radical Red's own stat/typing patches (including its Seviian forms and
+custom megas), resolves cap-relative levels ("Max Level - 2") against the badge
+cap in force at that point of the run, and downloads only the sprites the game
 actually uses. Sources are cached in `.cache/` between runs.
 
 ## Credits

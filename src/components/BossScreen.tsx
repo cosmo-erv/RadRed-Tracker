@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { isBoss, steps } from '../lib/game'
+import { extras, isBoss, steps } from '../lib/game'
 import { actions, useRun } from '../lib/store'
 import type { BossGroup, BossStep } from '../lib/types'
 import { GROUP_COLORS, GROUP_LABELS } from '../lib/display'
@@ -12,7 +12,8 @@ const GROUPS: (BossGroup | 'all')[] = [
   'elite-four',
   'rival',
   'evil-team',
-  'mini-boss'
+  'mini-boss',
+  'ace-trainer'
 ]
 
 export function BossScreen() {
@@ -21,7 +22,12 @@ export function BossScreen() {
   const [query, setQuery] = useState('')
   const [open, setOpen] = useState<BossStep | null>(null)
 
-  const bosses = useMemo(() => steps(run.mode).filter(isBoss), [run.mode])
+  // Ace Trainers have no location in any source, so they live after the
+  // ordered fights rather than inside the run.
+  const bosses = useMemo(
+    () => [...steps(run.mode).filter(isBoss), ...extras(run.mode)],
+    [run.mode]
+  )
   const visible = useMemo(() => {
     const term = query.trim().toLowerCase()
     return bosses.filter(
@@ -33,15 +39,16 @@ export function BossScreen() {
     )
   }, [bosses, group, query])
 
-  const beaten = bosses.filter((boss) => run.defeated[boss.id]).length
+  const ordered = bosses.filter((boss) => !boss.optional)
+  const beaten = ordered.filter((boss) => run.defeated[boss.id]).length
 
   return (
     <>
       <header className="topbar">
         <h1>Bosses</h1>
         <div className="sub">
-          {beaten} of {bosses.length} beaten · {run.mode === 'hardcore' ? 'Hardcore' : 'Normal'}{' '}
-          teams
+          {beaten} of {ordered.length} beaten · {bosses.length - ordered.length} optional ·{' '}
+          {run.mode === 'hardcore' ? 'Hardcore' : 'Normal'} teams
         </div>
       </header>
 
@@ -61,6 +68,14 @@ export function BossScreen() {
             </button>
           ))}
         </div>
+
+        {group === 'ace-trainer' ? (
+          <p className="tiny dim" style={{ margin: 0 }}>
+            Radical Red's Ace Trainers fight like bosses — five or six Pokémon, mega stones, cap
+            levels. No source lists where each one stands, so they are ordered by level rather
+            than by route.
+          </p>
+        ) : null}
 
         <div className="stack">
           {visible.map((boss) => (
@@ -84,6 +99,7 @@ export function BossScreen() {
                 <span className="meta truncate" style={{ display: 'block' }}>
                   {boss.name} · {boss.team.length} Pokémon
                   {boss.levelCap ? ` · Lv ${boss.levelCap}` : ''}
+                  {boss.scaled && !boss.levelCap ? ' · at your cap' : ''}
                 </span>
               </button>
               <span className="row" style={{ gap: 2 }}>

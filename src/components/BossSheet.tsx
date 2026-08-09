@@ -22,7 +22,9 @@ export function BossSheet({ step, onClose }: { step: BossStep; onClose: () => vo
       subtitle={
         <span className="row" style={{ gap: 6 }}>
           {step.speciality ? <TypeBadge type={step.speciality} /> : null}
-          {GROUP_LABELS[step.group]} · {step.name}
+          {GROUP_LABELS[step.group]}
+          {/* Ace Trainers carry no location, so their name is just the group. */}
+          {step.name && step.name !== GROUP_LABELS[step.group] ? ` · ${step.name}` : ''}
           {step.levelCap ? ` · Level cap ${step.levelCap}` : ''}
           {step.scaled ? ' · scales with your cap' : ''}
         </span>
@@ -59,7 +61,7 @@ function BossMonCard({ mon }: { mon: BossMon }) {
     <div className="boss-mon">
       <div style={{ textAlign: 'center' }}>
         <Sprite slug={mon.slug} size="lg" />
-        <div className="tiny dim">Lv {mon.level}</div>
+        {mon.level > 0 ? <div className="tiny dim">Lv {mon.level}</div> : null}
         {mon.offset !== undefined ? (
           <div className="tiny dim">cap {mon.offset === 0 ? '±0' : mon.offset}</div>
         ) : null}

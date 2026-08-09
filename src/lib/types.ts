@@ -39,7 +39,14 @@ export interface BossMon {
   moves: string[]
 }
 
-export type BossGroup = 'gym-leader' | 'elite-four' | 'rival' | 'evil-team' | 'mini-boss' | 'boss'
+export type BossGroup =
+  | 'gym-leader'
+  | 'elite-four'
+  | 'rival'
+  | 'evil-team'
+  | 'mini-boss'
+  | 'ace-trainer'
+  | 'boss'
 
 export interface BossStep {
   kind: 'boss'
@@ -51,6 +58,8 @@ export interface BossStep {
   speciality: string | null
   /** True when this fight's levels track your badge cap rather than being fixed. */
   scaled: boolean
+  /** Optional fights that sit outside the ordered run (Ace Trainers). */
+  optional?: boolean
   /** The cap the scaled levels were resolved against. */
   anchorCap?: number
   levelCap: number
@@ -67,6 +76,8 @@ export interface Game {
   abilities: Record<string, { name: string; effect: string }>
   items: Record<string, { name: string; sprite: string; effect: string }>
   modes: Record<Mode, Step[]>
+  /** Boss-tier fights with no location in any source, browsed on their own. */
+  extras: Record<Mode, BossStep[]>
 }
 
 /** Where a logged encounter ended up. */

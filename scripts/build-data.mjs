@@ -88,6 +88,110 @@ for (const row of statRows) {
   statsByPokemonId.set(row.pokemon_id, stats)
 }
 
+/* ------------------------------------------------------- ace trainer dumps */
+
+/**
+ * Radical Red's Ace Trainers are boss-tier fights the community docs group
+ * with the mini-bosses, but they are not in the nuzlocke.app dataset. Their
+ * teams come from Rudo2204's 4.1 trainer dumps instead.
+ *
+ * The dumps are gists, and gist.githubusercontent.com is not reachable from
+ * here, so the file content is lifted out of the rendered gist page.
+ */
+const ACE_DUMPS = {
+  normal: '7f9e4a3ceaf077d623d3c37b1f921601',
+  hardcore: 'ed23cfda024998b566128318963ea7a5'
+}
+
+function gistText(pageHtml) {
+  const rows = [...pageHtml.matchAll(/<td[^>]*class="[^"]*blob-code[^"]*"[^>]*>(.*?)<\/td>/gs)]
+  return rows
+    .map(([, cell]) =>
+      cell
+        .replace(/<[^>]+>/g, '')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/&amp;/g, '&')
+    )
+    .join('\n')
+}
+
+/** Splits a dump into trainers, each with a parsed team. */
+function parseDump(text) {
+  const trainers = []
+  let current = null
+  for (const line of text.split('\n')) {
+    const header = line.match(/^(.+?)\s*\(id: (0x[0-9a-fA-F]+)\)\s*$/)
+    if (header) {
+      current = { name: header[1].trim(), id: Number(header[2]), lines: [] }
+      trainers.push(current)
+    } else if (current) current.lines.push(line)
+  }
+
+  for (const trainer of trainers) {
+    trainer.team = trainer.lines
+      .join('\n')
+      .split(/\n\s*\n/)
+      .map((chunk) => chunk.trim())
+      .filter((chunk) => chunk.includes('Ability:'))
+      .map((chunk) => {
+        const rows = chunk.split('\n')
+        const lead = rows[0].match(/^(.+?)(?:\s\((?:M|F)\))?(?:\s@\s(.+))?$/)
+        const find = (prefix) =>
+          rows.find((row) => row.startsWith(prefix))?.slice(prefix.length).trim() ?? null
+        return {
+          species: lead[1].trim(),
+          item: lead[2]?.trim() ?? null,
+          ability: find('Ability:'),
+          level: find('Level:'),
+          moves: rows.filter((row) => row.startsWith('- ')).map((row) => row.slice(2).trim())
+        }
+      })
+  }
+  return trainers
+}
+
+/** "Max Level - 2" -> offset -2; "Max Level" -> offset 0; "47" -> level 47. */
+function dumpLevel(raw) {
+  if (!raw) return { level: 0 }
+  const scaled = raw.match(/Max Level(?:\s*-\s*(\d+))?/i)
+  if (scaled) return { offset: scaled[1] ? -Number(scaled[1]) : 0 }
+  const number = Number(raw.match(/\d+/)?.[0])
+  return { level: Number.isFinite(number) ? number : 0 }
+}
+
+/** Dump species names are Showdown-style; turn them into PokeAPI slugs. */
+function dumpSlug(name) {
+  const slug = name
+    .replace(/\s*\(Gender unknown\)/i, '')
+    .trim()
+    .replace(/[.'’:]/g, '')
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+  return DUMP_ALIAS[slug] ?? slug
+}
+
+const DUMP_ALIAS = {
+  enamorus: 'enamorus-incarnate',
+  keldeo: 'keldeo-ordinary',
+  'keldeo-resolute': 'keldeo-resolute',
+  lycanroc: 'lycanroc-midday',
+  maushold: 'maushold-family-of-four',
+  morpeko: 'morpeko-full-belly'
+}
+
+const aceTrainers = {}
+for (const [mode, gistId] of Object.entries(ACE_DUMPS)) {
+  const page = await cached(`ace-${mode}.html`, `https://gist.github.com/Rudo2204/${gistId}`)
+  aceTrainers[mode] = parseDump(gistText(page)).filter(
+    // Five or more Pokémon is what separates the boss-tier Ace Trainers from
+    // the ordinary route trainers sharing the class name.
+    (trainer) => trainer.name.startsWith('Ace Trainer') && trainer.team.length >= 5
+  )
+}
+
 /** Slugs the Radical Red data uses that PokeAPI spells differently. */
 const ALIAS = {
   basculin: 'basculin-red-striped',
@@ -152,6 +256,8 @@ for (const mode of ['radred', 'radred_hard'])
   for (const step of routes[mode]) for (const slug of step.encounters ?? []) usedSlugs.add(slug)
 for (const boss of Object.values(league.radred))
   for (const mon of boss.pokemon) usedSlugs.add(mon.name)
+for (const list of Object.values(aceTrainers))
+  for (const trainer of list) for (const mon of trainer.team) usedSlugs.add(dumpSlug(mon.species))
 
 const dex = {}
 const spriteJobs = new Map() // slug -> ordered list of candidate sprite URLs
@@ -300,6 +406,55 @@ const slugify = (s) =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '')
 
+/**
+ * Ace Trainers as boss-shaped entries. The dumps carry no location, so these
+ * are not placed in the run order — they are browsed and ticked off from the
+ * Bosses tab, sorted by level.
+ */
+function buildAceTrainers(mode) {
+  return aceTrainers[mode]
+    .map((trainer) => {
+      const team = trainer.team
+        .map((mon) => {
+          const slug = dumpSlug(mon.species)
+          if (!dex[slug]) return null
+          const { level = 0, offset } = dumpLevel(mon.level)
+          return {
+            slug,
+            level,
+            ...(offset !== undefined ? { offset } : {}),
+            ability: mon.ability ? slugify(mon.ability) : null,
+            held: mon.item && mon.item.toLowerCase() !== 'none' ? slugify(mon.item) : null,
+            moves: mon.moves.map(slugify)
+          }
+        })
+        .filter(Boolean)
+
+      return {
+        kind: 'boss',
+        id: `ace:${trainer.id}`,
+        key: `ace-${trainer.id}`,
+        name: 'Ace Trainer',
+        trainer: trainer.name.replace(/^Ace Trainer\s*/, ''),
+        group: 'ace-trainer',
+        speciality: null,
+        optional: true,
+        scaled: team.some((mon) => mon.offset !== undefined),
+        levelCap: team.reduce((max, mon) => Math.max(max, mon.level), 0),
+        team
+      }
+    })
+    .filter((entry) => entry.team.length >= 5)
+    // Cap-scaled fights are the late-game ones, so they sort after the fixed
+    // levels rather than ahead of them on a levelCap of 0.
+    .sort(
+      (a, b) =>
+        Number(a.scaled) - Number(b.scaled) ||
+        a.levelCap - b.levelCap ||
+        a.trainer.localeCompare(b.trainer)
+    )
+}
+
 const game = {
   title: 'Radical Red 4.1',
   generatedAt: new Date().toISOString().slice(0, 10),
@@ -309,6 +464,10 @@ const game = {
   modes: {
     normal: resolveScaledLevels(buildSteps('normal')),
     hardcore: resolveScaledLevels(buildSteps('hardcore'))
+  },
+  extras: {
+    normal: buildAceTrainers('normal'),
+    hardcore: buildAceTrainers('hardcore')
   }
 }
 
@@ -343,6 +502,7 @@ for (const [slug, candidates] of spriteJobs) {
 
 console.log(
   `game.json: ${game.modes.normal.length} normal steps, ${game.modes.hardcore.length} hardcore steps\n` +
+    `ace:       ${game.extras.normal.length} normal, ${game.extras.hardcore.length} hardcore\n` +
     `dex.json:  ${Object.keys(dex).length} species\n` +
     `sprites:   ${downloaded} downloaded, ${failed} missing`
 )

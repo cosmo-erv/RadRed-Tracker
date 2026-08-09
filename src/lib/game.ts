@@ -21,6 +21,9 @@ export const spriteUrl = (slug: Slug) =>
 
 export const steps = (mode: Mode): Step[] => GAME.modes[mode]
 
+/** Ace Trainers: boss-tier fights that no source places on the map. */
+export const extras = (mode: Mode): BossStep[] => GAME.extras[mode] ?? []
+
 export const isBoss = (step: Step): step is BossStep => step.kind === 'boss'
 
 export const bst = (slug: Slug) =>
