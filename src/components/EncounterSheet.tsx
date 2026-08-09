@@ -4,6 +4,7 @@ import { actions, PARTY_LIMIT, partyMembers, useRun } from '../lib/store'
 import type { RouteStep, Slug, Status } from '../lib/types'
 import { STATUS_META } from '../lib/display'
 import { Sheet, Sprite, Types } from './ui'
+import { EvolvePicker } from './EvolvePicker'
 
 const STATUS_ORDER: Status[] = ['party', 'box', 'dead', 'missed']
 
@@ -114,6 +115,11 @@ export function EncounterSheet({ step, onClose }: { step: RouteStep; onClose: ()
               }}
             />
           </div>
+
+          <EvolvePicker
+            slug={slug}
+            onChange={(next) => actions.updateEncounter(step.id, { slug: next })}
+          />
 
           <button className="btn danger block" onClick={() => actions.clearEncounter(step.id)}>
             Clear this encounter

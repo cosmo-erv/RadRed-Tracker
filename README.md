@@ -19,7 +19,9 @@ Dupes-clause candidates are flagged before you commit to them.
 
 **Team tab** — party / box / graveyard, level-cap warnings on anything that has
 outgrown the next boss, defensive type profiles, and a coverage read on the next
-boss's team.
+boss's team. Tap a Pokémon to evolve it: the nickname, level, status and the
+route it came from carry over, and branching lines (Eevee, Wurmple, Applin) list
+every option.
 
 **Bosses tab** — all 49 ordered fights plus 33 optional Ace Trainers,
 searchable and filterable by kind. Each one opens with full teams: levels,

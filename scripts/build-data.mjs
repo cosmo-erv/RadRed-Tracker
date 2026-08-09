@@ -446,7 +446,9 @@ const dex = {}
 const spriteJobs = new Map() // slug -> ordered list of candidate sprite URLs
 const unresolved = []
 
-for (const slug of [...usedSlugs].sort()) {
+/** Adds one species to the dex, resolving forms, patches and its sprite. */
+function addDexEntry(slug) {
+  if (dex[slug]) return true
   const fake = patches.fakemon?.[slug]
   const alias = ALIAS[slug] ?? slug
   const row = pokemonBySlug.get(alias)
@@ -455,12 +457,17 @@ for (const slug of [...usedSlugs].sort()) {
   const baseRow = row ?? pokemonBySlug.get(ALIAS[baseSlug] ?? baseSlug ?? '')
   if (!baseRow) {
     unresolved.push(slug)
-    continue
+    return false
   }
+
   const species = speciesById.get(baseRow.species_id)
   const patch = patches.pokemon?.[slug]
   const types = fake?.types ?? patch?.types ?? typesByPokemonId.get(baseRow.id) ?? ['normal']
-  const stats = { ...(statsByPokemonId.get(baseRow.id) ?? {}), ...(fake?.baseStats ?? {}), ...(patch?.stats ?? {}) }
+  const stats = {
+    ...(statsByPokemonId.get(baseRow.id) ?? {}),
+    ...(fake?.baseStats ?? {}),
+    ...(patch?.stats ?? {})
+  }
 
   dex[slug] = {
     name: displayName(slug),
@@ -473,14 +480,73 @@ for (const slug of [...usedSlugs].sort()) {
     ...(patch?.stats || fake ? { patched: true } : {})
   }
 
-  const defaultRow = pokemonRows.find((p) => p.species_id === baseRow.species_id && p.is_default === '1')
-  spriteJobs.set(slug, [
-    `${SPRITES}/versions/generation-viii/icons/${baseRow.id}.png`,
-    defaultRow ? `${SPRITES}/versions/generation-viii/icons/${defaultRow.id}.png` : null,
-    `${SPRITES}/versions/generation-viii/icons/${species.id}.png`,
-    // Species newer than the gen-viii icon set (Paldea, Hisui) only have full sprites.
-    `${SPRITES}/${baseRow.id}.png`
-  ].filter(Boolean))
+  const defaultRow = pokemonRows.find(
+    (p) => p.species_id === baseRow.species_id && p.is_default === '1'
+  )
+  spriteJobs.set(
+    slug,
+    [
+      `${SPRITES}/versions/generation-viii/icons/${baseRow.id}.png`,
+      defaultRow ? `${SPRITES}/versions/generation-viii/icons/${defaultRow.id}.png` : null,
+      `${SPRITES}/versions/generation-viii/icons/${species.id}.png`,
+      // Species newer than the gen-viii icon set (Paldea, Hisui) only have full sprites.
+      `${SPRITES}/${baseRow.id}.png`
+    ].filter(Boolean)
+  )
+  return true
+}
+
+for (const slug of [...usedSlugs].sort()) addDexEntry(slug)
+
+/* --------------------------------------------------------------- evolutions */
+
+const childSpecies = new Map()
+for (const row of speciesRows) {
+  const parent = row.evolves_from_species_id
+  if (!parent) continue
+  if (!childSpecies.has(parent)) childSpecies.set(parent, [])
+  childSpecies.get(parent).push(row)
+}
+
+/**
+ * What a species can evolve into. Regional forms keep their suffix where the
+ * evolved form exists (Alolan Rattata -> Alolan Raticate); where it does not,
+ * the plain children are offered and the player picks (Galarian Meowth has
+ * Perrserker among Persian's line).
+ */
+function evolutionsOf(slug) {
+  const entry = dex[slug]
+  if (!entry || entry.fakemon) return []
+  const species = speciesRows.find((row) => Number(row.id) === entry.dex)
+  if (!species) return []
+
+  const suffix = slug.startsWith(`${species.identifier}-`)
+    ? slug.slice(species.identifier.length + 1)
+    : null
+  // Megas and gigantamax forms are battle states, not evolutions.
+  if (suffix && /^(mega|mega-x|mega-y|gmax)$/.test(suffix)) return []
+
+  const targets = []
+  for (const child of childSpecies.get(species.id) ?? []) {
+    const suffixed = suffix ? `${child.identifier}-${suffix}` : null
+    if (suffixed && (dex[suffixed] || pokemonBySlug.has(suffixed))) targets.push(suffixed)
+    else if (pokemonBySlug.has(child.identifier)) targets.push(child.identifier)
+    else {
+      // Some species only exist under a form name, e.g. basculegion-male.
+      const formed = pokemonRows.find((p) => p.species_id === child.id && p.is_default === '1')
+      if (formed) targets.push(formed.identifier)
+    }
+  }
+  return [...new Set(targets)]
+}
+
+// Pull evolution targets into the dex so they have names, types and sprites.
+for (const slug of Object.keys(dex))
+  for (const target of evolutionsOf(slug)) addDexEntry(target)
+
+for (const slug of Object.keys(dex)) {
+  const targets = evolutionsOf(slug).filter((target) => dex[target])
+  if (targets.length) dex[slug].evo = targets
 }
 
 if (unresolved.length) console.warn('Unresolved species:', unresolved.join(', '))

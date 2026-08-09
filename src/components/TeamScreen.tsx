@@ -5,6 +5,7 @@ import { bestStab, defensiveProfile, multiplierClass, multiplierLabel } from '..
 import type { Encounter, Status } from '../lib/types'
 import { STATUS_META } from '../lib/display'
 import { Empty, Sheet, Sprite, TypeBadge, Types } from './ui'
+import { EvolvePicker } from './EvolvePicker'
 
 const SECTIONS: { status: Status; title: string }[] = [
   { status: 'party', title: 'Party' },
@@ -223,6 +224,10 @@ function MemberSheet({
           }}
         />
       </div>
+
+      {encounter.slug ? (
+        <EvolvePicker slug={encounter.slug} onChange={(next) => save({ slug: next })} />
+      ) : null}
 
       {encounter.slug ? (
         <section className="stack">

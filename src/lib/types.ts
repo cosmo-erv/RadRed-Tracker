@@ -20,6 +20,8 @@ export interface DexEntry {
   fakemon?: boolean
   /** Stats or typing differ from the mainline games. */
   patched?: boolean
+  /** Species this can evolve into. */
+  evo?: string[]
 }
 
 export interface RouteStep {
