@@ -196,8 +196,8 @@ function PlacementImport({ toast }: { toast: (message: string) => void }) {
   return (
     <div className="card stack" style={{ padding: 12, gap: 10 }}>
       <p className="tiny dim" style={{ margin: 0 }}>
-        Paste a list of where you meet them and they will be pinned into your run. A line naming a
-        place switches location; the rest are trainers:
+        Paste where you meet them and they get pinned into your run. Copying rows straight out of a
+        guide's spreadsheet works — extra columns are ignored — as does a plain list:
       </p>
       <pre className="tiny dim" style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
         {'Mt. Moon: Super Nerd Miguel, Lass Ali\nRoute 4\nCamper Ethan'}
@@ -218,14 +218,9 @@ function PlacementImport({ toast }: { toast: (message: string) => void }) {
       {result ? (
         <div className="tiny dim stack" style={{ gap: 4 }}>
           <span>{result.placed} pinned.</span>
-          {result.unknownPlaces.length > 0 ? (
+          {result.skipped.length > 0 ? (
             <span style={{ color: 'var(--warn)' }}>
-              Unknown places: {result.unknownPlaces.slice(0, 6).join(', ')}
-            </span>
-          ) : null}
-          {result.unknownTrainers.length > 0 ? (
-            <span style={{ color: 'var(--warn)' }}>
-              Unknown trainers: {result.unknownTrainers.slice(0, 6).join(', ')}
+              Nothing recognised in: {result.skipped.join(' · ')}
             </span>
           ) : null}
         </div>

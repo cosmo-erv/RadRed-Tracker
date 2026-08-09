@@ -6,25 +6,30 @@ const key = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, '')
 export interface PlacementResult {
   placements: Record<string, string>
   placed: number
-  unknownTrainers: string[]
-  unknownPlaces: string[]
+  /** Lines nothing was recognised in, for the user to eyeball. */
+  skipped: string[]
 }
 
 /**
  * Turns a pasted list of "where you meet them" into pins.
  *
- * No source reachable from the build has mini-boss locations, so this accepts
- * whatever shape a player can copy out of a guide:
+ * No source reachable from the build has mini-boss locations, so this is
+ * deliberately forgiving about shape. It accepts what a guide reads like:
  *
  *   Mt. Moon: Super Nerd Miguel, Lass Ali
  *
  *   Mt. Moon
  *   Super Nerd Miguel
- *   Lass Ali
  *
- * A line naming a location switches context; every other line is read as
- * trainer names for that location. Trainers match on their name with or
- * without the class, so "Miguel" and "Super Nerd Miguel" both land.
+ * and what a spreadsheet gives you when you copy a block of cells, where the
+ * columns are tab-separated and may carry levels, Pokémon and notes alongside:
+ *
+ *   Mt. Moon → Super Nerd Miguel → Thwackey, Bibarel → cap -3
+ *
+ * Every cell is checked against the known locations and the known fights.
+ * A recognised location sets where following trainers land, so column order
+ * does not matter, and unrecognised cells are ignored rather than guessed at —
+ * a spreadsheet row is mostly cells this app has no opinion about.
  */
 export function parsePlacements(text: string, mode: Mode): PlacementResult {
   const places = new Map<string, string>()
@@ -35,58 +40,43 @@ export function parsePlacements(text: string, mode: Mode): PlacementResult {
   const fights = new Map<string, string>()
   for (const fight of extras(mode)) {
     if (fight.group !== 'ace-trainer') continue
-    // Later entries never clobber earlier ones, so duplicate first names keep
-    // the first fight rather than silently retargeting.
+    // First entry wins, so a repeated first name keeps the earlier fight
+    // instead of being silently retargeted by a later one.
     for (const label of [`${fight.name} ${fight.trainer}`, fight.trainer]) {
       if (!fights.has(key(label))) fights.set(key(label), fight.id)
     }
   }
 
   const placements: Record<string, string> = {}
-  const unknownTrainers: string[] = []
-  const unknownPlaces: string[] = []
+  const skipped: string[] = []
   let current: string | null = null
 
   for (const rawLine of text.split(/\r?\n/)) {
-    const line = rawLine.trim().replace(/^[-*•\d.\s]+/, '')
+    const line = rawLine.trim()
     if (!line) continue
 
-    const [head, ...rest] = line.split(':')
-    const inlinePlace = places.get(key(head))
-    if (inlinePlace) {
-      current = inlinePlace
-      const trailing = rest.join(':').trim()
-      if (!trailing) continue
-      for (const name of trailing.split(/[,;/]+/)) claim(name)
-      continue
+    const cells = line
+      .split(/\t|[:,;/|]/)
+      .map((cell) => cell.trim().replace(/^[-*•\d.\s]+/, '').trim())
+      .filter(Boolean)
+
+    const place = cells.map((cell) => places.get(key(cell))).find(Boolean)
+    if (place) current = place
+
+    let pinned = 0
+    for (const cell of cells) {
+      const fightId = fights.get(key(cell))
+      if (!fightId) continue
+      pinned++
+      if (current) placements[fightId] = current
     }
 
-    // A bare line that looks like a location but is not one is worth reporting:
-    // silently reading it as a trainer name would scatter the pins.
-    if (rest.length > 0 && !fights.has(key(head))) {
-      unknownPlaces.push(head.trim())
-      current = null
-      continue
-    }
-
-    for (const name of line.split(/[,;/]+/)) claim(name)
+    // A line that named only a place is doing its job. Anything else that
+    // pinned nothing is worth showing back — a misspelled or unknown trainer
+    // would otherwise vanish into a row full of Pokémon names.
+    const placeOnly = place && cells.length === 1
+    if (pinned === 0 && !placeOnly && skipped.length < 8) skipped.push(line.slice(0, 60))
   }
 
-  function claim(rawName: string) {
-    const name = rawName.trim()
-    if (!name) return
-    const fightId = fights.get(key(name))
-    if (!fightId) {
-      unknownTrainers.push(name)
-      return
-    }
-    if (current) placements[fightId] = current
-  }
-
-  return {
-    placements,
-    placed: Object.keys(placements).length,
-    unknownTrainers,
-    unknownPlaces
-  }
+  return { placements, placed: Object.keys(placements).length, skipped }
 }
