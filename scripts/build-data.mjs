@@ -263,6 +263,50 @@ function matchScore(boss, candidate) {
 /** Confidence floor for trusting a matched roster over the older data. */
 const MATCH_FLOOR = 3
 
+/**
+ * Teams transcribed from the documentation PDF (see scripts/extract-doc-teams.py).
+ * The dumps repeat a trainer's name across several fights and the older data is
+ * too stale to tell them apart, so where the sheet covers a fight it decides
+ * which dump entry belongs to it.
+ */
+const docTeams = JSON.parse(
+  readFileSync(resolve(root, 'scripts/data/doc-teams.json'), 'utf8')
+)
+
+const docTeamsByTrainer = new Map()
+for (const entry of docTeams) {
+  const list = docTeamsByTrainer.get(entry.trainer) ?? []
+  list.push(entry)
+  docTeamsByTrainer.set(entry.trainer, list)
+}
+
+/** Fraction of a documented team that a dump entry reproduces. */
+function docOverlap(candidate, docEntry) {
+  const base = (slug) => slug.split('-')[0].replace(/^\?/, '')
+  const theirs = new Set(docEntry.species.map(base))
+  const ours = new Set(candidate.team.map((mon) => base(dumpSlug(mon.species))))
+  const shared = [...theirs].filter((slug) => ours.has(slug)).length
+  return shared / Math.max(theirs.size, 1)
+}
+
+/** The dump entry that best reproduces a documented team for this trainer. */
+function docPick(boss, candidates) {
+  // Our labels carry variant suffixes the sheet does not ("Pryce (Team A)").
+  const plain = boss.trainer.toUpperCase().replace(/\s*\(.*?\)/g, '').trim()
+  const entries = [
+    ...(docTeamsByTrainer.get(boss.trainer.toUpperCase()) ?? []),
+    ...(docTeamsByTrainer.get(plain) ?? [])
+  ]
+  let best = null
+  for (const entry of entries) {
+    for (const candidate of candidates) {
+      const score = docOverlap(candidate, entry)
+      if (!best || score > best.score) best = { candidate, score, page: entry.page }
+    }
+  }
+  return best && best.score >= 0.5 ? best : null
+}
+
 /** Builds a boss team out of a dump entry. */
 function dumpTeam(trainer) {
   return trainer.team
@@ -315,9 +359,31 @@ function applyDumpTeams(steps, mode, log, assignments) {
   if (mode !== 'normal') {
     for (const boss of bosses) {
       const inherited = assignments.get(boss.key.replace(/_hard$/, ''))
-      const trainer = inherited === undefined ? null : byId.get(inherited)
-      if (trainer) log.matched.push({ ...useDumpTeam(boss, trainer, mode), inherited: true })
-      else log.unverified.push(`${mode}: ${boss.trainer}`)
+      // Double battles inherit both halves.
+      const trainers = (Array.isArray(inherited) ? inherited : [inherited])
+        .map((id) => (id === undefined ? null : byId.get(id)))
+        .filter(Boolean)
+      if (trainers.length === 0) {
+        log.unverified.push(`${mode}: ${boss.trainer}`)
+        continue
+      }
+      if (trainers.length === 1) {
+        log.matched.push({ ...useDumpTeam(boss, trainers[0], mode), inherited: true })
+        continue
+      }
+      const before = boss.team.map((mon) => mon.slug)
+      boss.team = trainers.flatMap((trainer) => dumpTeam(trainer))
+      boss.scaled = boss.team.some((mon) => mon.offset !== undefined)
+      boss.levelCap = boss.team.reduce((max, mon) => Math.max(max, mon.level), 0)
+      boss.verified = true
+      log.matched.push({
+        mode,
+        trainer: boss.trainer,
+        id: trainers.map((t) => t.id).join('+'),
+        inherited: true,
+        added: boss.team.map((mon) => mon.slug).filter((slug) => !before.includes(slug)),
+        removed: before.filter((slug) => !boss.team.some((mon) => mon.slug === slug))
+      })
     }
     return steps
   }
@@ -337,6 +403,37 @@ function applyDumpTeams(steps, mode, log, assignments) {
   }
 
   for (const [name, group] of byName) {
+    // A double battle is one fight in the run and two trainers in the dump.
+    if (name.includes('&')) {
+      const halves = name.split('&').map((half) => pool.get(half.trim()) ?? [])
+      for (const boss of group) {
+        const teams = halves.map((options) => {
+          const best = options
+            .map((candidate) => ({ candidate, score: matchScore(boss, candidate) }))
+            .sort((a, b) => b.score - a.score)[0]
+          return best?.candidate ?? null
+        })
+        if (teams.some((team) => !team)) {
+          log.unverified.push(`${mode}: ${boss.trainer} (double battle, half missing)`)
+          continue
+        }
+        const before = boss.team.map((mon) => mon.slug)
+        boss.team = teams.flatMap((trainer) => dumpTeam(trainer))
+        boss.scaled = boss.team.some((mon) => mon.offset !== undefined)
+        boss.levelCap = boss.team.reduce((max, mon) => Math.max(max, mon.level), 0)
+        boss.verified = true
+        assignments.set(boss.key, teams.map((team) => team.id))
+        log.matched.push({
+          mode,
+          trainer: boss.trainer,
+          id: teams.map((team) => team.id).join('+'),
+          added: boss.team.map((mon) => mon.slug).filter((slug) => !before.includes(slug)),
+          removed: before.filter((slug) => !boss.team.some((mon) => mon.slug === slug))
+        })
+      }
+      continue
+    }
+
     const candidates = pool.get(name) ?? []
     if (candidates.length === 0) {
       for (const boss of group) log.unverified.push(`${mode}: ${boss.trainer} (no “${name}” in dump)`)
@@ -359,8 +456,25 @@ function applyDumpTeams(steps, mode, log, assignments) {
       assignments.set(boss.key, candidate.id)
       log.matched.push({ ...useDumpTeam(boss, candidate, mode), score: Number(score.toFixed(1)) })
     }
-    for (const boss of group)
-      if (!takenBosses.has(boss)) log.unverified.push(`${mode}: ${boss.trainer} (no confident match)`)
+    for (const boss of group) {
+      if (takenBosses.has(boss)) continue
+      // The scorer could not separate this trainer's fights; ask the sheet.
+      const picked = docPick(
+        boss,
+        candidates.filter((candidate) => !takenCandidates.has(candidate))
+      )
+      if (picked) {
+        takenBosses.add(boss)
+        takenCandidates.add(picked.candidate)
+        assignments.set(boss.key, picked.candidate.id)
+        log.matched.push({
+          ...useDumpTeam(boss, picked.candidate, mode),
+          viaDoc: `p${picked.page} (${Math.round(picked.score * 100)}%)`
+        })
+        continue
+      }
+      log.unverified.push(`${mode}: ${boss.trainer} (no confident match)`)
+    }
   }
   return steps
 }

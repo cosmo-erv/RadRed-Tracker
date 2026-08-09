@@ -1,0 +1,2176 @@
+[
+ {
+  "page": 15,
+  "trainer": "BROCK",
+  "species": [
+   "geodude-alola",
+   "varoom",
+   "onix",
+   "archen"
+  ],
+  "levels": [
+   13,
+   13,
+   14,
+   12
+  ]
+ },
+ {
+  "page": 16,
+  "trainer": "MISTY",
+  "species": [
+   "frogadier",
+   "floatzel",
+   "starmie",
+   "clodsire"
+  ],
+  "levels": [
+   25,
+   25,
+   27,
+   26
+  ]
+ },
+ {
+  "page": 17,
+  "trainer": "LT. SURGE",
+  "species": [
+   "pincurchin",
+   "vikavolt",
+   "bellibolt",
+   "pawmot",
+   "manectric-mega"
+  ],
+  "levels": [
+   32,
+   33,
+   33,
+   33,
+   34
+  ]
+ },
+ {
+  "page": 18,
+  "trainer": "ERIKA",
+  "species": [
+   "rillaboom",
+   "meowscarada",
+   "venusaur-mega",
+   "meganium",
+   "electrode-hisui"
+  ],
+  "levels": [
+   43,
+   43,
+   44,
+   44,
+   44
+  ]
+ },
+ {
+  "page": 19,
+  "trainer": "SABRINA",
+  "species": [
+   "hatterene",
+   "indeedee-f",
+   "brute-bonnet",
+   "porygon2",
+   "ursaluna",
+   "gardevoir"
+  ],
+  "levels": [
+   57,
+   57,
+   58,
+   58,
+   59,
+   59
+  ]
+ },
+ {
+  "page": 20,
+  "trainer": "KOGA",
+  "species": [
+   "swellow",
+   "accelgor",
+   "greninja",
+   "drapion",
+   "iron-valiant",
+   "toxtricity-mega"
+  ],
+  "levels": [
+   67,
+   68,
+   68,
+   68,
+   68,
+   68
+  ]
+ },
+ {
+  "page": 21,
+  "trainer": "BLAINE",
+  "species": [
+   "armarouge",
+   "slither-wing",
+   "exeggutor",
+   "typhlosion",
+   "?ogerpon-h",
+   "charizard-mega-y"
+  ],
+  "levels": [
+   75,
+   76,
+   76,
+   76,
+   76,
+   76
+  ]
+ },
+ {
+  "page": 22,
+  "trainer": "CLAIR",
+  "species": [
+   "aerodactyl",
+   "roaring-moon",
+   "dragonite",
+   "magearna",
+   "gouging-fire",
+   "naganadel"
+  ],
+  "levels": [
+   80,
+   81,
+   80,
+   81,
+   81,
+   81
+  ]
+ },
+ {
+  "page": 23,
+  "trainer": "BROCK",
+  "species": [
+   "great-tusk",
+   "omastar",
+   "ursaluna",
+   "tyranitar",
+   "arcanine-hisui",
+   "aerodactyl-mega"
+  ],
+  "levels": [
+   -2,
+   -2,
+   -2,
+   -2,
+   -2,
+   -2
+  ]
+ },
+ {
+  "page": 24,
+  "trainer": "MISTY",
+  "species": [
+   "?pala\ufb01n-hero",
+   "kingdra",
+   "archaludon",
+   "gyarados-mega",
+   "ferrothorn",
+   "gorebyss"
+  ],
+  "levels": [
+   -2,
+   -2,
+   -2,
+   -2,
+   -2,
+   -2
+  ]
+ },
+ {
+  "page": 25,
+  "trainer": "LT. SURGE",
+  "species": [
+   "iron-treads",
+   "bellibolt",
+   "rotom",
+   "pawmot",
+   "manectric-mega",
+   "iron-hands"
+  ],
+  "levels": [
+   -2,
+   -2,
+   -2,
+   -2,
+   -2,
+   -2
+  ]
+ },
+ {
+  "page": 26,
+  "trainer": "ERIKA",
+  "species": [
+   "?ogerpon-c",
+   "meowscarada",
+   "hawlucha",
+   "sinistcha",
+   "lilligant-hisui",
+   "venusaur-mega"
+  ],
+  "levels": [
+   -2,
+   -2,
+   -2,
+   -2,
+   -2,
+   -2
+  ]
+ },
+ {
+  "page": 28,
+  "trainer": "FALKNER",
+  "species": [
+   "rufflet",
+   "wattrel",
+   "flittle"
+  ],
+  "levels": [
+   12,
+   14,
+   14
+  ]
+ },
+ {
+  "page": 29,
+  "trainer": "BUGSY",
+  "species": [
+   "lokix",
+   "ledian",
+   "scyther",
+   "scizor"
+  ],
+  "levels": [
+   -2,
+   -2,
+   -2,
+   -2
+  ]
+ },
+ {
+  "page": 30,
+  "trainer": "BUGSY",
+  "species": [
+   "kleavor",
+   "scizor",
+   "scyther",
+   "lokix",
+   "araquanid",
+   "vikavolt"
+  ],
+  "levels": [
+   -2,
+   -2,
+   -2,
+   -2,
+   -2,
+   -2
+  ]
+ },
+ {
+  "page": 31,
+  "trainer": "WHITNEY",
+  "species": [
+   "tinkaton",
+   "farigiraf",
+   "miltank",
+   "drampa",
+   "?dudunsparce"
+  ],
+  "levels": [
+   -2,
+   -2,
+   -2,
+   -2,
+   -2
+  ]
+ },
+ {
+  "page": 32,
+  "trainer": "MORTY",
+  "species": [
+   "mimikyu",
+   "dusknoir",
+   "zoroark-hisui",
+   "skeledirge",
+   "gengar",
+   "ceruledge"
+  ],
+  "levels": [
+   -2,
+   -2,
+   -2,
+   -2,
+   -2,
+   -2
+  ]
+ },
+ {
+  "page": 33,
+  "trainer": "CHUCK",
+  "species": [
+   "hitmontop",
+   "sneasler",
+   "breloom",
+   "quaquaval",
+   "lucario",
+   "gallade"
+  ],
+  "levels": [
+   -2,
+   -2,
+   -2,
+   -2,
+   -2,
+   -2
+  ]
+ },
+ {
+  "page": 34,
+  "trainer": "PRYCE",
+  "species": [
+   "jynx",
+   "cloyster",
+   "walrein",
+   "baxcalibur",
+   "arctozolt",
+   "glalie"
+  ],
+  "levels": [
+   -2,
+   -2,
+   -2,
+   -2,
+   -2,
+   -2
+  ]
+ },
+ {
+  "page": 35,
+  "trainer": "JASMINE",
+  "species": [
+   "steelix",
+   "melmetal",
+   "duraludon",
+   "durant",
+   "samurott",
+   "aggron"
+  ],
+  "levels": [
+   -2,
+   -2,
+   -2,
+   -2,
+   -2,
+   -2
+  ]
+ },
+ {
+  "page": 36,
+  "trainer": "JASMINE",
+  "species": [
+   "bronzong",
+   "melmetal",
+   "magnezone",
+   "excadrill",
+   "samurott",
+   "aggron"
+  ],
+  "levels": [
+   -2,
+   -2,
+   -2,
+   -2,
+   -2,
+   -2
+  ]
+ },
+ {
+  "page": 37,
+  "trainer": "JASMINE",
+  "species": [
+   "forretress",
+   "melmetal",
+   "magnezone",
+   "lucario",
+   "samurott",
+   "aggron"
+  ],
+  "levels": [
+   -2,
+   -2,
+   -2,
+   -2,
+   -2,
+   -2
+  ]
+ },
+ {
+  "page": 42,
+  "trainer": "BRENDAN",
+  "species": [
+   "corphish",
+   "treecko"
+  ],
+  "levels": [
+   7,
+   8
+  ]
+ },
+ {
+  "page": 46,
+  "trainer": "ANNE",
+  "species": [
+   "loudred",
+   "lunatone",
+   "crawdaunt",
+   "grovyle"
+  ],
+  "levels": [
+   -2,
+   -2,
+   -2,
+   -2
+  ]
+ },
+ {
+  "page": 50,
+  "trainer": "BRENDAN",
+  "species": [
+   "metagross",
+   "medicham",
+   "crawdaunt",
+   "exploud",
+   "gardevoir",
+   "sceptile-mega"
+  ],
+  "levels": [
+   -2,
+   -2,
+   -2,
+   -2,
+   -2,
+   -2
+  ]
+ },
+ {
+  "page": 51,
+  "trainer": "MAY",
+  "species": [
+   "solrock",
+   "breloom",
+   "manectric",
+   "relicanth",
+   "flygon",
+   "blaziken-mega"
+  ],
+  "levels": [
+   71,
+   71,
+   72,
+   72,
+   72,
+   73
+  ]
+ },
+ {
+  "page": 55,
+  "trainer": "BRENDAN",
+  "species": [
+   "?deoxys-a",
+   "jirachi",
+   "?landorus-i",
+   "zapdos-galar",
+   "huntail",
+   "sceptile-mega"
+  ],
+  "levels": [
+   81,
+   81,
+   82,
+   81,
+   81,
+   82
+  ]
+ },
+ {
+  "page": 58,
+  "trainer": "GRUNT",
+  "species": [
+   "growlithe",
+   "gabite",
+   "togedemaru",
+   "komala"
+  ],
+  "levels": [
+   -2,
+   -4,
+   -4,
+   -4
+  ]
+ },
+ {
+  "page": 59,
+  "trainer": "GRUNT",
+  "species": [
+   "persian-alola",
+   "golbat",
+   "?oinkologne-f",
+   "octillery"
+  ],
+  "levels": [
+   -4,
+   -3,
+   -5,
+   -3
+  ]
+ },
+ {
+  "page": 63,
+  "trainer": "GIOVANNI",
+  "species": [
+   "nidoking",
+   "honchkrow",
+   "infernape",
+   "kangaskhan",
+   "orthworm",
+   "veluza"
+  ],
+  "levels": [
+   45,
+   45,
+   46,
+   46,
+   47,
+   46
+  ]
+ },
+ {
+  "page": 64,
+  "trainer": "ARIANA",
+  "species": [
+   "incineroar",
+   "primarina",
+   "mawile",
+   "gothitelle",
+   "gholdengo",
+   "houndoom-mega"
+  ],
+  "levels": [
+   54,
+   55,
+   55,
+   54,
+   55,
+   55
+  ]
+ },
+ {
+  "page": 65,
+  "trainer": "BRENDAN",
+  "species": [
+   "masquerain",
+   "exploud",
+   "sceptile-mega"
+  ],
+  "levels": [
+   55,
+   55,
+   55
+  ]
+ },
+ {
+  "page": 66,
+  "trainer": "GIOVANNI",
+  "species": [
+   "hippowdon",
+   "excadrill",
+   "kangaskhan",
+   "garganacl",
+   "garchomp",
+   "torterra"
+  ],
+  "levels": [
+   56,
+   57,
+   57,
+   57,
+   57,
+   56
+  ]
+ },
+ {
+  "page": 68,
+  "trainer": "ARIANA",
+  "species": [
+   "hatterene",
+   "rhyperior",
+   "honchkrow",
+   "mawile"
+  ],
+  "levels": [
+   77,
+   78,
+   78,
+   79
+  ]
+ },
+ {
+  "page": 69,
+  "trainer": "GIOVANNI",
+  "species": [
+   "tapu-lele",
+   "scrafty",
+   "excadrill",
+   "tyranitar",
+   "celesteela",
+   "mewtwo-mega-y"
+  ],
+  "levels": [
+   80,
+   80,
+   80,
+   80,
+   80,
+   80
+  ]
+ },
+ {
+  "page": 70,
+  "trainer": "LANCE",
+  "species": [
+   "dragapult",
+   "dialga",
+   "salamence"
+  ],
+  "levels": [
+   83,
+   83,
+   82
+  ]
+ },
+ {
+  "page": 71,
+  "trainer": "ANNE",
+  "species": [
+   "stufful",
+   "clefairy",
+   "audino"
+  ],
+  "levels": [
+   -3,
+   -5,
+   -3
+  ]
+ },
+ {
+  "page": 72,
+  "trainer": "NELLE",
+  "species": [
+   "charcadet",
+   "gulpin"
+  ],
+  "levels": [
+   -3,
+   -3
+  ]
+ },
+ {
+  "page": 73,
+  "trainer": "MIGUEL",
+  "species": [
+   "thwackey",
+   "voltorb-hisui",
+   "bibarel",
+   "sableye"
+  ],
+  "levels": [
+   -5,
+   -5,
+   -5,
+   -5
+  ]
+ },
+ {
+  "page": 74,
+  "trainer": "CALE",
+  "species": [
+   "vivillon",
+   "butterfree",
+   "?wormadam-sa"
+  ],
+  "levels": [
+   -5,
+   -4,
+   -4
+  ]
+ },
+ {
+  "page": 75,
+  "trainer": "ALI",
+  "species": [
+   "jigglypuff",
+   "amaura",
+   "brionne"
+  ],
+  "levels": [
+   -3,
+   -4,
+   -4
+  ]
+ },
+ {
+  "page": 76,
+  "trainer": "TIMMY",
+  "species": [
+   "plusle",
+   "electrike",
+   "snover"
+  ],
+  "levels": [
+   -4,
+   -4,
+   -4
+  ]
+ },
+ {
+  "page": 77,
+  "trainer": "RELI",
+  "species": [
+   "greedent",
+   "togetic",
+   "clamperl"
+  ],
+  "levels": [
+   -4,
+   -5,
+   -4
+  ]
+ },
+ {
+  "page": 78,
+  "trainer": "ETHAN",
+  "species": [
+   "mabosstiff",
+   "salandit",
+   "misdreavus"
+  ],
+  "levels": [
+   -3,
+   -2,
+   -3
+  ]
+ },
+ {
+  "page": 79,
+  "trainer": "ANNE",
+  "species": [
+   "dewott",
+   "simisear",
+   "dartrix",
+   "simisage",
+   "wigglytuff"
+  ],
+  "levels": [
+   -2,
+   -2,
+   -4,
+   -4,
+   -4
+  ]
+ },
+ {
+  "page": 80,
+  "trainer": "ANNE",
+  "species": [
+   "lileep",
+   "lumineon",
+   "?tatsugiri",
+   "cramorant",
+   "nidoqueen"
+  ],
+  "levels": [
+   -2,
+   -4,
+   -5,
+   -4,
+   -4
+  ]
+ },
+ {
+  "page": 81,
+  "trainer": "CAITLIN",
+  "species": [
+   "smeargle",
+   "spinda",
+   "sneasel-hisui",
+   "liepard"
+  ],
+  "levels": [
+   -2,
+   -2,
+   -4,
+   -4
+  ]
+ },
+ {
+  "page": 83,
+  "trainer": "LUCA",
+  "species": [
+   "piloswine",
+   "heliolisk",
+   "nidoqueen",
+   "yanmega",
+   "walrein"
+  ],
+  "levels": [
+   -5,
+   -5,
+   -5,
+   -5,
+   -5
+  ]
+ },
+ {
+  "page": 84,
+  "trainer": "JUSTIN",
+  "species": [
+   "darmanitan-galar",
+   "sandslash-alola",
+   "conkeldurr"
+  ],
+  "levels": [
+   -5,
+   -5,
+   -5
+  ]
+ },
+ {
+  "page": 85,
+  "trainer": "ANDREW",
+  "species": [
+   "froslass",
+   "arctozolt"
+  ],
+  "levels": [
+   -5,
+   -5
+  ]
+ },
+ {
+  "page": 86,
+  "trainer": "SEBASTIAN",
+  "species": [
+   "gliscor",
+   "charizard-mega-x",
+   "togekiss",
+   "tropius"
+  ],
+  "levels": [
+   -4,
+   -5,
+   -5,
+   -5
+  ]
+ },
+ {
+  "page": 87,
+  "trainer": "SUSIE",
+  "species": [
+   "shiftry",
+   "goodra",
+   "espeon",
+   "arcanine-hisui",
+   "alcremie"
+  ],
+  "levels": [
+   -5,
+   -5,
+   -5,
+   -5,
+   -5
+  ]
+ },
+ {
+  "page": 88,
+  "trainer": "ALMA",
+  "species": [
+   "tangrowth",
+   "chansey",
+   "chandelure",
+   "altaria"
+  ],
+  "levels": [
+   -5,
+   -5,
+   -5,
+   -5
+  ]
+ },
+ {
+  "page": 89,
+  "trainer": "LOLA",
+  "species": [
+   "cherrim",
+   "venusaur",
+   "florges",
+   "bouffalant",
+   "zebstrika"
+  ],
+  "levels": [
+   -5,
+   -5,
+   -5,
+   -5,
+   -5
+  ]
+ },
+ {
+  "page": 90,
+  "trainer": "PERRY",
+  "species": [
+   "rhyperior",
+   "gardevoir",
+   "rapidash",
+   "dragapult"
+  ],
+  "levels": [
+   -5,
+   -5,
+   -5,
+   -5
+  ]
+ },
+ {
+  "page": 91,
+  "trainer": "JARED",
+  "species": [
+   "crustle",
+   "leavanny",
+   "camerupt-mega",
+   "mamoswine"
+  ],
+  "levels": [
+   -5,
+   -5,
+   -5,
+   -5
+  ]
+ },
+ {
+  "page": 92,
+  "trainer": "ROBERT",
+  "species": [
+   "exeggutor",
+   "archeops",
+   "emboar",
+   "jolteon"
+  ],
+  "levels": [
+   -5,
+   -5,
+   -5,
+   -5
+  ]
+ },
+ {
+  "page": 93,
+  "trainer": "LAO",
+  "species": [
+   "mienshao",
+   "heliolisk",
+   "dugtrio-alola"
+  ],
+  "levels": [
+   -5,
+   -5,
+   -5
+  ]
+ },
+ {
+  "page": 94,
+  "trainer": "KOJI",
+  "species": [
+   "dracozolt"
+  ],
+  "levels": [
+   -5
+  ]
+ },
+ {
+  "page": 95,
+  "trainer": "LUKE",
+  "species": [
+   "dugtrio",
+   "hariyama"
+  ],
+  "levels": [
+   -5,
+   -5
+  ]
+ },
+ {
+  "page": 96,
+  "trainer": "RUBEN",
+  "species": [
+   "accelgor",
+   "gigalith",
+   "roserade",
+   "houndstone"
+  ],
+  "levels": [
+   -5,
+   -5,
+   -5,
+   -4
+  ]
+ },
+ {
+  "page": 97,
+  "trainer": "CAMRON",
+  "species": [
+   "swampert",
+   "revavroom",
+   "scizor",
+   "cacturne"
+  ],
+  "levels": [
+   -5,
+   -5,
+   -5,
+   -5
+  ]
+ },
+ {
+  "page": 100,
+  "trainer": "WILLIAM",
+  "species": [
+   "magnezone",
+   "whiscash",
+   "salamence",
+   "starmie"
+  ],
+  "levels": [
+   -5,
+   -5,
+   -5,
+   -5
+  ]
+ },
+ {
+  "page": 101,
+  "trainer": "JACOB",
+  "species": [
+   "cramorant",
+   "decidueye",
+   "mantine",
+   "nidoqueen"
+  ],
+  "levels": [
+   -2,
+   -5,
+   -5,
+   -5
+  ]
+ },
+ {
+  "page": 102,
+  "trainer": "RAMIRO",
+  "species": [
+   "?pikachu-sur\ufb01ng",
+   "milotic",
+   "lapras",
+   "goodra-hisui"
+  ],
+  "levels": [
+   -4,
+   -4,
+   -4,
+   -4
+  ]
+ },
+ {
+  "page": 103,
+  "trainer": "WILTON",
+  "species": [
+   "dragapult",
+   "kilowattrel",
+   "pinsir",
+   "omastar"
+  ],
+  "levels": [
+   -5,
+   -5,
+   -5,
+   -5
+  ]
+ },
+ {
+  "page": 104,
+  "trainer": "DEREK",
+  "species": [
+   "mienshao",
+   "arcanine-hisui",
+   "rhyperior",
+   "centiskorch",
+   "sunflora"
+  ],
+  "levels": [
+   -4,
+   -5,
+   -5,
+   -4,
+   -4
+  ]
+ },
+ {
+  "page": 105,
+  "trainer": "LUCY",
+  "species": [
+   "?lycanroc",
+   "darmanitan",
+   "gliscor",
+   "ursaluna",
+   "charizard"
+  ],
+  "levels": [
+   -5,
+   -5,
+   -5,
+   -4,
+   -5
+  ]
+ },
+ {
+  "page": 106,
+  "trainer": "ZAC",
+  "species": [
+   "nidoking",
+   "noivern",
+   "braviary-hisui",
+   "excadrill",
+   "volcarona"
+  ],
+  "levels": [
+   -4,
+   -5,
+   -4,
+   -5,
+   -4
+  ]
+ },
+ {
+  "page": 107,
+  "trainer": "NAOMI",
+  "species": [
+   "?maushold",
+   "veluza",
+   "shedinja",
+   "absol",
+   "galvantula"
+  ],
+  "levels": [
+   -4,
+   -4,
+   -4,
+   -4,
+   -4
+  ]
+ },
+ {
+  "page": 108,
+  "trainer": "ROLANDO",
+  "species": [
+   "cyclizar",
+   "flygon",
+   "crobat",
+   "kingler",
+   "hatterene"
+  ],
+  "levels": [
+   -4,
+   -4,
+   -4,
+   -4,
+   -4
+  ]
+ },
+ {
+  "page": 109,
+  "trainer": "GEORGE",
+  "species": [
+   "exeggutor-alola",
+   "donphan",
+   "cloyster",
+   "mienshao",
+   "pinsir"
+  ],
+  "levels": [
+   83,
+   84,
+   84,
+   84,
+   84
+  ]
+ },
+ {
+  "page": 110,
+  "trainer": "CAROLINE",
+  "species": [
+   "bellossom",
+   "parasect",
+   "vileplume",
+   "amoonguss",
+   "lopunny"
+  ],
+  "levels": [
+   83,
+   83,
+   83,
+   83,
+   84
+  ]
+ },
+ {
+  "page": 111,
+  "trainer": "COLBY",
+  "species": [
+   "feraligatr",
+   "swanna",
+   "walrein",
+   "sharpedo",
+   "empoleon"
+  ],
+  "levels": [
+   83,
+   83,
+   83,
+   84,
+   84
+  ]
+ },
+ {
+  "page": 112,
+  "trainer": "ALEXA",
+  "species": [
+   "clefable",
+   "wigglytuff",
+   "chansey",
+   "komala",
+   "audino"
+  ],
+  "levels": [
+   83,
+   83,
+   83,
+   83,
+   84
+  ]
+ },
+ {
+  "page": 115,
+  "trainer": "COLE",
+  "species": [
+   "yanmega",
+   "tyrantrum",
+   "weezing-galar",
+   "ferrothorn",
+   "gastrodon",
+   "centiskorch"
+  ],
+  "levels": [
+   -2,
+   -2,
+   -2,
+   -2,
+   -2,
+   -2
+  ]
+ },
+ {
+  "page": 116,
+  "trainer": "KID",
+  "species": [
+   "swampert",
+   "pelipper",
+   "scizor",
+   "frosmoth",
+   "seaking",
+   "swampert-mega"
+  ],
+  "levels": [
+   -2,
+   -2,
+   -2,
+   -2,
+   -2,
+   -2
+  ]
+ },
+ {
+  "page": 119,
+  "trainer": "HALEY",
+  "species": [
+   "magnezone",
+   "hawlucha",
+   "magmortar",
+   "cursola",
+   "starmie",
+   "sandaconda"
+  ],
+  "levels": [
+   -2,
+   -2,
+   -2,
+   -2,
+   -2,
+   -2
+  ]
+ },
+ {
+  "page": 120,
+  "trainer": "FAN",
+  "species": [
+   "?hoopa-u",
+   "?aegislash",
+   "?ogerpon-c",
+   "simisear",
+   "celebi",
+   "machamp"
+  ],
+  "levels": [
+   -2,
+   -2,
+   -2,
+   -2,
+   -2,
+   -2
+  ]
+ },
+ {
+  "page": 123,
+  "trainer": "BURGLAR",
+  "species": [
+   "?qwil\ufb01sh-h",
+   "wugtrio",
+   "magcargo",
+   "hydrapple",
+   "fezandipiti"
+  ],
+  "levels": [
+   -4,
+   -4,
+   -4,
+   -4,
+   -4
+  ]
+ },
+ {
+  "page": 124,
+  "trainer": "BURGLAR",
+  "species": [
+   "okidogi",
+   "munkidori",
+   "?scream",
+   "?tail",
+   "persian"
+  ],
+  "levels": [
+   -4,
+   -4,
+   -4,
+   -4,
+   -4
+  ]
+ },
+ {
+  "page": 126,
+  "trainer": "LORELEI",
+  "species": [
+   "politoed",
+   "?ogerpon-w",
+   "swampert-mega",
+   "walking-wake",
+   "kyogre",
+   "iron-bundle"
+  ],
+  "levels": [
+   85,
+   85,
+   85,
+   85,
+   85,
+   85
+  ]
+ },
+ {
+  "page": 127,
+  "trainer": "LORELEI",
+  "species": [
+   "ninetales-alola",
+   "glaceon",
+   "rotom",
+   "?calyrex-i",
+   "abomasnow-mega",
+   "baxcalibur"
+  ],
+  "levels": [
+   85,
+   85,
+   85,
+   85,
+   85,
+   85
+  ]
+ },
+ {
+  "page": 128,
+  "trainer": "BRUNO",
+  "species": [
+   "great-tusk",
+   "?urshifu-r",
+   "iron-valiant",
+   "iron-hands",
+   "?zacian-c",
+   "lucario-mega"
+  ],
+  "levels": [
+   85,
+   85,
+   85,
+   85,
+   85,
+   85
+  ]
+ },
+ {
+  "page": 129,
+  "trainer": "BRUNO",
+  "species": [
+   "infernape",
+   "?urshifu-s",
+   "kommo-o",
+   "iron-valiant",
+   "?zacian-c",
+   "lucario-mega"
+  ],
+  "levels": [
+   85,
+   85,
+   85,
+   85,
+   85,
+   85
+  ]
+ },
+ {
+  "page": 130,
+  "trainer": "AGATHA",
+  "species": [
+   "marshadow",
+   "roaring-moon",
+   "chi-yu",
+   "gengar"
+  ],
+  "levels": [
+   85,
+   85,
+   85,
+   85
+  ]
+ },
+ {
+  "page": 131,
+  "trainer": "AGATHA",
+  "species": [
+   "marshadow",
+   "flutter-mane",
+   "chien-pao",
+   "gengar"
+  ],
+  "levels": [
+   85,
+   85,
+   85,
+   85
+  ]
+ },
+ {
+  "page": 132,
+  "trainer": "LANCE",
+  "species": [
+   "aerodactyl",
+   "melmetal",
+   "iron-jugulis",
+   "dragonite",
+   "dialga",
+   "salamence"
+  ],
+  "levels": [
+   85,
+   85,
+   85,
+   85,
+   85,
+   85
+  ]
+ },
+ {
+  "page": 133,
+  "trainer": "LANCE",
+  "species": [
+   "garchomp",
+   "melmetal",
+   "iron-jugulis",
+   "dragonite",
+   "dialga",
+   "salamence"
+  ],
+  "levels": [
+   85,
+   85,
+   85,
+   85,
+   85,
+   85
+  ]
+ },
+ {
+  "page": 140,
+  "trainer": "CLAIR",
+  "species": [
+   "dragapult",
+   "dialga",
+   "dragonite",
+   "flapple",
+   "kyurem",
+   "genesect"
+  ],
+  "levels": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "page": 141,
+  "trainer": "MISTY",
+  "species": [
+   "pikachu",
+   "kyogre",
+   "goodra-hisui",
+   "kingdra",
+   "drednaw",
+   "floatzel"
+  ],
+  "levels": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "page": 142,
+  "trainer": "FALKNER",
+  "species": [
+   "pidgeot",
+   "yanmega",
+   "?shaymin-s",
+   "?enamorus-i",
+   "ho-oh",
+   "gyarados"
+  ],
+  "levels": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "page": 143,
+  "trainer": "GIAN",
+  "species": [
+   "magearna",
+   "swampert-mega",
+   "necrozma",
+   "greninja-ash",
+   "palkia",
+   "?shaymin-s"
+  ],
+  "levels": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "page": 144,
+  "trainer": "PRYCE",
+  "species": [
+   "abomasnow-mega",
+   "?calyrex-i",
+   "kyurem",
+   "?wishiwashi-s-sch",
+   "donphan",
+   "heracross"
+  ],
+  "levels": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "page": 145,
+  "trainer": "RUNAN",
+  "species": [
+   "krookodile",
+   "?enamorus-i",
+   "salamence",
+   "?aegislash",
+   "victini",
+   "?keldeo"
+  ],
+  "levels": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "page": 146,
+  "trainer": "SAMANTHA",
+  "species": [
+   "torkoal",
+   "charizard",
+   "milotic",
+   "dodrio-sevii",
+   "tyranitar",
+   "garchomp"
+  ],
+  "levels": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "page": 147,
+  "trainer": "SYMES",
+  "species": [
+   "rillaboom",
+   "dragonite",
+   "zebstrika-sevii",
+   "alcremie",
+   "samurott-hisui",
+   "decidueye-hisui"
+  ],
+  "levels": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "page": 148,
+  "trainer": "MORTY",
+  "species": [
+   "mimikyu",
+   "marshadow",
+   "silvally-fairy",
+   "?urshifu-s",
+   "gengar",
+   "zarude"
+  ],
+  "levels": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "page": 149,
+  "trainer": "FAN",
+  "species": [
+   "galvantula",
+   "garchomp",
+   "huntail",
+   "necrozma",
+   "machamp",
+   "?hoopa-u"
+  ],
+  "levels": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "page": 150,
+  "trainer": "AMARA",
+  "species": [
+   "milotic",
+   "milotic-sevii",
+   "dewgong"
+  ],
+  "levels": [
+   0,
+   -1,
+   0
+  ]
+ },
+ {
+  "page": 151,
+  "trainer": "ABIGAIL",
+  "species": [
+   "azumarill",
+   "octillery",
+   "golisopod",
+   "wishiwashi"
+  ],
+  "levels": [
+   0,
+   -1,
+   0,
+   0
+  ]
+ },
+ {
+  "page": 153,
+  "trainer": "CLAIRE",
+  "species": [
+   "alakazam",
+   "indeedee",
+   "dugtrio",
+   "lucario"
+  ],
+  "levels": [
+   -1,
+   -2,
+   0,
+   0
+  ]
+ },
+ {
+  "page": 154,
+  "trainer": "TANYA",
+  "species": [
+   "pangoro",
+   "bewear",
+   "ursaring-sevii",
+   "tauros"
+  ],
+  "levels": [
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "page": 155,
+  "trainer": "BRYCE",
+  "species": [
+   "bisharp",
+   "floatzel",
+   "butterfree",
+   "magnezone",
+   "delphox"
+  ],
+  "levels": [
+   -1,
+   -2,
+   0,
+   0,
+   -1
+  ]
+ },
+ {
+  "page": 156,
+  "trainer": "GARRETT",
+  "species": [
+   "mantine-sevii",
+   "milotic",
+   "greninja",
+   "lapras"
+  ],
+  "levels": [
+   0,
+   -2,
+   -2,
+   0
+  ]
+ },
+ {
+  "page": 157,
+  "trainer": "MIK & KIA",
+  "species": [
+   "infernape",
+   "grapploct",
+   "metagross-mega",
+   "?lycanroc-d"
+  ],
+  "levels": [
+   0,
+   -2,
+   -1,
+   0
+  ]
+ },
+ {
+  "page": 158,
+  "trainer": "SHEA",
+  "species": [
+   "decidueye-hisui",
+   "probopass",
+   "conkeldurr",
+   "dodrio-sevii"
+  ],
+  "levels": [
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "page": 159,
+  "trainer": "HUGH",
+  "species": [
+   "heracross",
+   "medicham-mega",
+   "tyrantrum"
+  ],
+  "levels": [
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "page": 160,
+  "trainer": "SHARON",
+  "species": [
+   "grapploct",
+   "gallade",
+   "darmanitan",
+   "nidoking"
+  ],
+  "levels": [
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "page": 161,
+  "trainer": "FINN",
+  "species": [
+   "overqwil",
+   "barraskewda",
+   "cloyster",
+   "drednaw"
+  ],
+  "levels": [
+   0,
+   -2,
+   -1,
+   0
+  ]
+ },
+ {
+  "page": 162,
+  "trainer": "MARIA",
+  "species": [
+   "inteleon",
+   "dragalge",
+   "starmie",
+   "?basculegion-f"
+  ],
+  "levels": [
+   0,
+   -1,
+   -1,
+   0
+  ]
+ },
+ {
+  "page": 163,
+  "trainer": "TOMMY",
+  "species": [
+   "?basculegion",
+   "gyarados",
+   "slowbro",
+   "slowbro-galar"
+  ],
+  "levels": [
+   0,
+   -2,
+   0,
+   0
+  ]
+ },
+ {
+  "page": 164,
+  "trainer": "BUGSY",
+  "species": [
+   "pheromosa",
+   "clawitzer-sevii",
+   "genesect",
+   "magnezone",
+   "arceus",
+   "pinsir"
+  ],
+  "levels": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "page": 165,
+  "trainer": "BETH",
+  "species": [
+   "scizor",
+   "haxorus",
+   "golem",
+   "manectric-mega"
+  ],
+  "levels": [
+   0,
+   -1,
+   -1,
+   0
+  ]
+ },
+ {
+  "page": 166,
+  "trainer": "LOGAN",
+  "species": [
+   "yanmega",
+   "arcanine-hisui",
+   "altaria",
+   "feraligatr"
+  ],
+  "levels": [
+   0,
+   -1,
+   0,
+   0
+  ]
+ },
+ {
+  "page": 167,
+  "trainer": "JOCELYN",
+  "species": [
+   "?dudunsparce",
+   "archeops",
+   "togekiss",
+   "huntail"
+  ],
+  "levels": [
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "page": 168,
+  "trainer": "ARIANA",
+  "species": [
+   "ambipom",
+   "weavile",
+   "victini",
+   "toxapex",
+   "mawile",
+   "xerneas"
+  ],
+  "levels": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "page": 170,
+  "trainer": "WHITNEY",
+  "species": [
+   "zangoose",
+   "miltank",
+   "exploud",
+   "zoroark-hisui",
+   "ursaluna",
+   "snorlax"
+  ],
+  "levels": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "page": 171,
+  "trainer": "ANDREW",
+  "species": [
+   "infernape",
+   "sceptile-mega",
+   "torterra",
+   "blaziken-mega",
+   "greninja",
+   "inteleon"
+  ],
+  "levels": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "page": 172,
+  "trainer": "CHANNELER",
+  "species": [
+   "grimmsnarl",
+   "moltres-galar",
+   "zoroark",
+   "sneasler",
+   "absol",
+   "bisharp"
+  ],
+  "levels": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "page": 178,
+  "trainer": "JOY & MEG",
+  "species": [
+   "flapple",
+   "arcanine-hisui",
+   "excadrill",
+   "chandelure",
+   "primarina"
+  ],
+  "levels": [
+   0,
+   -1,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "page": 181,
+  "trainer": "TISHA",
+  "species": [
+   "pelipper",
+   "golduck",
+   "vaporeon",
+   "jolteon",
+   "noivern"
+  ],
+  "levels": [
+   0,
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "page": 182,
+  "trainer": "AMIRA",
+  "species": [
+   "tangrowth",
+   "blissey",
+   "toxapex",
+   "reuniclus",
+   "drapion"
+  ],
+  "levels": [
+   0,
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "page": 187,
+  "trainer": "JANNY",
+  "species": [
+   "pelipper",
+   "ferrothorn",
+   "seismitoad",
+   "articuno-galar",
+   "barraskewda",
+   "raikou"
+  ],
+  "levels": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ]
+ }
+]

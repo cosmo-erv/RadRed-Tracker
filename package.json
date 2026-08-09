@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "data": "node scripts/build-data.mjs",
     "icons": "node scripts/make-icons.mjs",
-    "single": "npm run build && node scripts/build-single.mjs"
+    "single": "npm run build && node scripts/build-single.mjs",
+    "doc-teams": "python3 scripts/extract-doc-teams.py"
   },
   "dependencies": {
     "react": "^19.2.0",

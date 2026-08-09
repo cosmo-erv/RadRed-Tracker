@@ -51,6 +51,12 @@ rosters are a game version behind. Fights that could not be matched to a dump
 entry with confidence keep their older roster and are flagged in the app rather
 than replaced with a guess.
 
+A PDF export of the documentation's "Default Mode Bosses" sheet is kept at
+`scripts/data/rr41-default-mode-bosses.pdf` and parsed by
+`scripts/extract-doc-teams.py`. It settles which dump entry belongs to which
+fight where the trainer name alone is ambiguous, and 96 of the 124 teams it
+yields match the shipped data exactly.
+
 The dumps carry no location per trainer. The order, location and level cap of
 each fight come instead from the community documentation spreadsheet, which is
 not reachable from the build environment and so is transcribed into

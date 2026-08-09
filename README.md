@@ -76,6 +76,11 @@ npm run data       # routes, bosses, dex, sprites
 npm run icons      # app icons
 ```
 
+Boss teams are cross-checked against a PDF export of the documentation's
+"Default Mode Bosses" sheet (`npm run doc-teams`, which needs `pip install
+pypdf`). That sheet also decides which dump entry belongs to a fight when one
+trainer name covers several.
+
 `scripts/build-data.mjs` pulls Radical Red's route order, encounter tables and
 fight list from the open-source nuzlocke.app dataset, replaces the rosters with
 their Radical Red 4.1 teams from the trainer dumps (that dataset is a version
