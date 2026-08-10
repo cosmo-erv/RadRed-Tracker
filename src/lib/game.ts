@@ -26,6 +26,20 @@ export const extras = (mode: Mode): BossStep[] => GAME.extras[mode] ?? []
 
 export const isBoss = (step: Step): step is BossStep => step.kind === 'boss'
 
+/** The run's first step, where you log the starter you chose. */
+export const starterStepId = (mode: Mode): string | null =>
+  steps(mode).find((step) => step.kind === 'route' && step.name === 'Starter')?.id ?? null
+
+/**
+ * Which branch a species puts you on. Every Radical Red starter leads with
+ * grass, fire or water, so the choice reads straight off its typing — Mudkip
+ * counts as water exactly like Squirtle does.
+ */
+export function starterTypeOf(slug: Slug): Starter | null {
+  const first = dex(slug).types[0]
+  return first === 'grass' || first === 'fire' || first === 'water' ? first : null
+}
+
 /**
  * The team you will actually face. Rival fights carry one roster per starter,
  * because the rival takes the one that beats yours.

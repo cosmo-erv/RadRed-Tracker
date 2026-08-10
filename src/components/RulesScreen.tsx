@@ -70,8 +70,9 @@ export function RulesScreen({ toast }: { toast: (message: string) => void }) {
                 ))}
               </div>
               <p className="tiny dim">
-                The rival takes the starter that beats yours, so his teams change with this. Pick
-                water and every rival fight shows the Bulbasaur line.
+                The rival takes the starter that beats yours, so his fights follow this. Logging
+                your starter on the Run tab sets it for you — Mudkip counts as water just like
+                Squirtle — and this is here for changing it by hand.
               </p>
             </div>
 

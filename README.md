@@ -34,8 +34,10 @@ abilities, held items, all four moves — and a matchup grid crossing your Poké
 against theirs. Search spans every fight regardless of the active filter, so a
 trainer you have just walked into can be looked up by name.
 
-Rival fights carry all three starter branches and show the one you will face
-once you set your starter — pick water and the rival's line is Bulbasaur.
+Rival fights carry all three starter branches and show the one you will face.
+Logging your starter on the Run tab picks the branch — any of Radical Red's 27
+starters, since the branch reads off its typing, so Mudkip counts as water just
+like Squirtle. The Rules tab can override it by hand.
 
 Fights whose levels track your badge cap say so and show each Pokémon's offset;
 the handful of rosters that could not be confirmed against 4.1 are labelled

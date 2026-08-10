@@ -28,7 +28,9 @@ export function BossSheet({ step, onClose }: { step: BossStep; onClose: () => vo
           {step.name && step.name !== GROUP_LABELS[step.group] ? ` · ${step.name}` : ''}
           {levelCap ? ` · Level cap ${levelCap}` : ''}
           {scaled ? ' · scales with your cap' : ''}
-          {step.variants ? ` · ${run.starter ? `your ${run.starter} start` : 'pick a starter in Rules'}` : ''}
+          {step.variants
+            ? ` · ${run.starter ? `your ${run.starter} start` : 'log your starter to fix this'}`
+            : ''}
         </span>
       }
       onClose={onClose}

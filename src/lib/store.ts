@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react'
+import { starterStepId, starterTypeOf } from './game'
 import type { Encounter, Mode, Rules, Run, Starter, Status } from './types'
 
 const KEY = 'radred.run.v1'
@@ -67,6 +68,15 @@ function commit(next: Run) {
   listeners.forEach((listener) => listener())
 }
 
+/**
+ * Logging your starter is the starter choice — the rival takes the type that
+ * beats it, so his fights follow from this without setting it twice.
+ */
+function starterFor(locId: string, slug?: string) {
+  if (!slug || locId !== starterStepId(run.mode)) return null
+  return starterTypeOf(slug)
+}
+
 function subscribe(listener: () => void) {
   listeners.add(listener)
   return () => listeners.delete(listener)
@@ -99,13 +109,22 @@ export const actions = {
       locId,
       at: existing?.at ?? Date.now()
     }
-    commit({ ...run, encounters: { ...run.encounters, [locId]: encounter } })
+    commit({
+      ...run,
+      encounters: { ...run.encounters, [locId]: encounter },
+      starter: starterFor(locId, encounter.slug) ?? run.starter
+    })
   },
 
   updateEncounter(locId: string, patch: Partial<Encounter>) {
     const existing = run.encounters[locId]
     if (!existing) return
-    commit({ ...run, encounters: { ...run.encounters, [locId]: { ...existing, ...patch } } })
+    const encounter = { ...existing, ...patch }
+    commit({
+      ...run,
+      encounters: { ...run.encounters, [locId]: encounter },
+      starter: starterFor(locId, encounter.slug) ?? run.starter
+    })
   },
 
   clearEncounter(locId: string) {
