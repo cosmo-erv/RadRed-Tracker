@@ -605,6 +605,9 @@ function addDexEntry(slug) {
     types: types.filter(Boolean),
     gen: Number(species.generation_id),
     family: Number(species.evolution_chain_id),
+    // Boxed Pokémon store experience, not level, so importing a save needs
+    // this to work the level back out.
+    growth: Number(species.growth_rate_id) || 2,
     stats,
     ...(fake ? { fakemon: true } : {}),
     ...(patch?.stats || fake ? { patched: true } : {})
@@ -927,14 +930,16 @@ function buildMoves() {
     table[row.identifier] = {
       type: typeById.get(row.type_id) ?? 'normal',
       power: Number(row.power) || 0,
-      category
+      category,
+      // Blank accuracy means the move cannot miss.
+      accuracy: row.accuracy === '' ? null : Number(row.accuracy)
     }
   }
 
   // Hidden Power is one move per type in the dumps; all are 60 BP special.
   for (const type of typeById.values()) {
     if (type === 'normal' || type === 'fairy' || type === 'shadow' || type === 'unknown') continue
-    table[`hidden-power-${type}`] = { type, power: 60, category: 'special' }
+    table[`hidden-power-${type}`] = { type, power: 60, category: 'special', accuracy: 100 }
   }
 
   for (const [slug, target] of Object.entries(MOVE_ALIAS)) {
@@ -942,20 +947,83 @@ function buildMoves() {
   }
   Object.assign(table, CUSTOM_MOVES)
 
-  // Radical Red's own rebalances win over the mainline numbers.
+  // Radical Red's own rebalances win over the mainline numbers. Only a small
+  // number of them are documented in a form this build can reach, so the rest
+  // of the table is mainline data and the app says so rather than presenting
+  // every number as if it were confirmed for the hack.
   for (const [slug, patch] of Object.entries(patches.move ?? {})) {
     const power = Number(patch.power)
+    const accuracy = Number(patch.accuracy)
     const existing = table[slug]
     table[slug] = {
       ...existing,
       ...(patch.type ? { type: patch.type.toLowerCase() } : {}),
       ...(Number.isFinite(power) && power > 0 ? { power } : {}),
+      ...(Number.isFinite(accuracy) && accuracy > 0 ? { accuracy } : {}),
       ...(patch.category ? { category: patch.category.toLowerCase() } : {}),
       ...(existing ? { patched: true } : {}),
       ...(patch.effect ? { effect: patch.effect } : {})
     }
   }
   return table
+}
+
+/* --------------------------------------------------- save-file species ids */
+
+/**
+ * Radical Red runs on the Complete Fire Red Upgrade engine, whose species
+ * numbering is its own — not FireRed's internal indices and not the national
+ * dex. Its header is the authority, so a save file's species bytes can be
+ * turned back into the names this app uses.
+ */
+const CFRU_SPECIES =
+  'https://raw.githubusercontent.com/Skeli789/Complete-Fire-Red-Upgrade/master/include/constants/species.h'
+
+/** CFRU form suffixes against the ones the sprite/dex slugs use. */
+const FORM_SUFFIX = {
+  A: 'alola',
+  G: 'galar',
+  H: 'hisui',
+  F: 'female',
+  M: 'male',
+  MEGA: 'mega',
+  THERIAN: 'therian',
+  ORIGIN: 'origin',
+  X: 'mega-x',
+  Y: 'mega-y'
+}
+
+async function buildSpeciesIds() {
+  const header = await cached('cfru-species.h', CFRU_SPECIES)
+  const ids = {}
+  const unmapped = []
+
+  for (const line of header.split('\n')) {
+    const match = line.match(/^#define SPECIES_([A-Z0-9_]+)\s+(0x[0-9A-Fa-f]+|\d+)/)
+    if (!match) continue
+    const [, name, raw] = match
+    const id = Number(raw)
+    if (id === 0 || name === 'NONE' || /^(TABLES_TERMIN|EGG|OLD_UNOWN)/.test(name)) continue
+
+    const parts = name.toLowerCase().split('_')
+    const candidates = []
+    // Longest form suffix first: MEGA_X before MEGA.
+    for (let take = Math.min(2, parts.length - 1); take >= 0; take--) {
+      const base = parts.slice(0, parts.length - take).join('-')
+      const suffix = parts.slice(parts.length - take).join('_').toUpperCase()
+      if (take === 0) candidates.push(base)
+      else if (FORM_SUFFIX[suffix]) candidates.push(`${base}-${FORM_SUFFIX[suffix]}`)
+      else candidates.push(`${base}-${parts.slice(parts.length - take).join('-')}`)
+    }
+    // A form this dex does not carry still points at the right species: better
+    // to import a Persian than to drop the Pokémon on the floor.
+    candidates.push(parts[0])
+
+    const slug = candidates.find((candidate) => dex[candidate])
+    if (slug) ids[id] = slug
+    else unmapped.push(name)
+  }
+  return { ids, unmapped }
 }
 
 const moveTable = buildMoves()
@@ -1347,9 +1415,16 @@ matchLog.moves = [
     (unpriced.length ? ` — missing: ${unpriced.join(', ')}` : '')
 ]
 
+const speciesIds = await buildSpeciesIds()
+matchLog.species = [
+  `${Object.keys(speciesIds.ids).length} save-file ids mapped` +
+    (speciesIds.unmapped.length ? `, ${speciesIds.unmapped.length} unmapped` : '')
+]
+
 await mkdir(resolve(root, 'src/data'), { recursive: true })
 await writeFile(resolve(root, 'src/data/game.json'), JSON.stringify(game))
 await writeFile(resolve(root, 'src/data/dex.json'), JSON.stringify(dex))
+await writeFile(resolve(root, 'src/data/species-ids.json'), JSON.stringify(speciesIds.ids))
 
 /* ----------------------------------------------------------------- sprites */
 
@@ -1385,6 +1460,7 @@ for (const entry of matchLog.placed) console.log('  order:', entry)
 for (const entry of matchLog.unplaced) console.log('  unplaced:', entry)
 console.log(`  rivals:   ${matchLog.rivals.length} fights carry starter branches`)
 for (const entry of matchLog.moves) console.log('  moves:   ', entry)
+for (const entry of matchLog.species) console.log('  save ids:', entry)
 await writeFile(resolve(cache, 'match-report.json'), JSON.stringify(matchLog, null, 2))
 
 console.log(

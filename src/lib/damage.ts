@@ -6,6 +6,8 @@ export interface MoveInfo {
   type: string
   power: number
   category: 'physical' | 'special' | 'status'
+  /** Null when the move cannot miss. */
+  accuracy?: number | null
   /** Radical Red changed this move's numbers. */
   patched?: boolean
   /** A Radical Red original, entered by hand from its in-game description. */

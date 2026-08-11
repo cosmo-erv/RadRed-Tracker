@@ -15,6 +15,8 @@ export interface DexEntry {
   types: string[]
   gen: number
   family: number
+  /** PokeAPI growth-rate id, for turning a save's experience into a level. */
+  growth?: number
   stats: Partial<Stats>
   /** Radical Red original species (Seviian forms, custom megas). */
   fakemon?: boolean
@@ -96,6 +98,7 @@ export interface Game {
       type: string
       power: number
       category: 'physical' | 'special' | 'status'
+      accuracy?: number | null
       patched?: boolean
       custom?: boolean
       effect?: string

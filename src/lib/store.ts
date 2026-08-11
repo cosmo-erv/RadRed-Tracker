@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react'
-import { starterStepId, starterTypeOf } from './game'
-import type { Encounter, Mode, Rules, Run, Save, Starter, Status } from './types'
+import { dex, starterStepId, starterTypeOf } from './game'
+import type { Encounter, Mode, Rules, Run, Save, Slug, Starter, Status } from './types'
 
 const KEY = 'radred.save.v2'
 /** Where single-run saves lived before attempts existed. */
@@ -212,6 +212,49 @@ export const actions = {
 
   setStatus(locId: string, status: Status) {
     actions.updateEncounter(locId, { status })
+  },
+
+  /**
+   * Folds a read save file into the current attempt.
+   *
+   * A save knows what you are carrying but not where you caught it, and this
+   * tracker is organised by where. So each Pokémon in the file is matched to
+   * an encounter you already logged, by evolution family — a Charmeleon in
+   * the save is the Charmander you logged on Route 1 — and updates its level,
+   * nickname, species and whether it is in the party or the box. Pokémon with
+   * no matching encounter are handed back rather than invented a route for.
+   */
+  applySave(mons: { slug: Slug; nickname: string; level: number; from: 'party' | number }[]) {
+    const encounters = { ...run.encounters }
+    const claimed = new Set<string>()
+    const unmatched: typeof mons = []
+
+    for (const mon of mons) {
+      const family = dex(mon.slug).family
+      const match = Object.values(encounters).find(
+        (encounter) =>
+          !claimed.has(encounter.locId) &&
+          encounter.slug &&
+          encounter.status !== 'missed' &&
+          dex(encounter.slug).family === family
+      )
+      if (!match) {
+        unmatched.push(mon)
+        continue
+      }
+      claimed.add(match.locId)
+      encounters[match.locId] = {
+        ...match,
+        slug: mon.slug,
+        level: mon.level,
+        nickname: mon.nickname || match.nickname,
+        // A save cannot tell you something died, only where it is now.
+        status: match.status === 'dead' ? 'dead' : mon.from === 'party' ? 'party' : 'box'
+      }
+    }
+
+    commit({ ...run, encounters })
+    return { updated: claimed.size, unmatched }
   },
 
   /** Bumps a Pokémon's KO tally; never below zero. */

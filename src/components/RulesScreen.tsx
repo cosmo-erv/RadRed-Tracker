@@ -4,6 +4,7 @@ import { GAME } from '../lib/game'
 import { actions, useRun, useSave } from '../lib/store'
 import type { Mode, Starter } from '../lib/types'
 import { Sprite, Toggle } from './ui'
+import { SaveImport } from './SaveImport'
 
 export function RulesScreen({ toast }: { toast: (message: string) => void }) {
   const run = useRun()
@@ -202,6 +203,11 @@ export function RulesScreen({ toast }: { toast: (message: string) => void }) {
               Clear this attempt
             </button>
           </div>
+        </section>
+
+        <section className="stack">
+          <h2 className="section-title">Read your save file</h2>
+          <SaveImport toast={toast} />
         </section>
 
         <section className="stack">

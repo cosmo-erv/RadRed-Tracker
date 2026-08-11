@@ -68,9 +68,14 @@ export function Calculator({ step }: { step: BossStep }) {
       ))}
 
       <p className="tiny dim" style={{ margin: 0 }}>
-        Damage at 31 IVs, no EVs, neutral nature, worst roll. Abilities, held items, stat boosts,
-        weather and screens are not counted — a real hit usually lands at or above these numbers,
-        but Levitate or a Choice Band will move them.
+        Damage at 31 IVs, no EVs, neutral nature, worst roll, assuming the move hits. Abilities,
+        held items, stat boosts, weather and screens are not counted — a real hit usually lands at
+        or above these numbers, but Levitate or a Choice Band will move them.
+      </p>
+      <p className="tiny dim" style={{ margin: 0 }}>
+        Move numbers are the mainline ones plus the Radical Red changes this build could source.
+        Radical Red rebalances more moves than that, so treat a surprising number as worth checking
+        in-game.
       </p>
 
       <Bench bench={bench} />
@@ -136,7 +141,11 @@ function MemberBlock({
 
       {worst && worst.hits <= 2 ? (
         <p className="tiny" style={{ margin: 0, color: 'var(--bad)' }}>
-          Dies in {worst.hits === 1 ? 'one hit' : 'two'} to {label(worst.move)}.
+          Dies in {worst.hits === 1 ? 'one hit' : 'two'} to {label(worst.move)}
+          {typeof worst.info.accuracy === 'number' && worst.info.accuracy < 100
+            ? ` (${worst.info.accuracy}% accurate)`
+            : ''}
+          .
         </p>
       ) : null}
 
