@@ -505,6 +505,68 @@ img {
   transform: scale(1.4) translateY(-6%);
 }
 
+/* One row per enemy Pokémon: sprite, name, what you do, what they do. */
+.calc-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.calc-cell {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) 74px 74px;
+  align-items: center;
+  gap: 6px;
+}
+
+.calc-cell .mx {
+  padding: 4px 2px;
+  line-height: 1.25;
+}
+
+.calc-cell .arrow {
+  opacity: 0.6;
+  font-weight: 500;
+}
+
+.calc-cell .ko {
+  font-size: 10px;
+  font-weight: 600;
+  opacity: 0.8;
+}
+
+.bench-pick {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 8px;
+  min-width: 76px;
+  min-height: var(--tap);
+  border-radius: 12px;
+  background: var(--bg-raised-2);
+  border: 1px solid var(--line);
+  flex: 0 0 auto;
+}
+
+.move-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 40px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--bg-raised-2);
+  text-align: left;
+}
+
+.move-row[aria-pressed='true'] {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
 .tickbox.sm {
   width: 22px;
   height: 22px;
@@ -834,6 +896,23 @@ img {
 
 .mx-neutral {
   background: var(--bg-raised-2);
+}
+
+/* Incoming damage: the same bands read the other way round, so a hit that
+   nearly kills you never shows up green. */
+.mx-safe {
+  background: #1d4531;
+  color: #9ff0bd;
+}
+
+.mx-danger {
+  background: #5a2f1c;
+  color: #ffcaa8;
+}
+
+.mx-danger2 {
+  background: #7a231d;
+  color: #ffd6d2;
 }
 
 .boss-mon {

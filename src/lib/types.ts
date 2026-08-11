@@ -89,7 +89,18 @@ export interface BossVariant {
 export interface Game {
   title: string
   generatedAt: string
-  moves: Record<string, { power?: string; type?: string; effect?: string }>
+  /** Every move's type, power and damage class, for the calculator. */
+  moves: Record<
+    string,
+    {
+      type: string
+      power: number
+      category: 'physical' | 'special' | 'status'
+      patched?: boolean
+      custom?: boolean
+      effect?: string
+    }
+  >
   abilities: Record<string, { name: string; effect: string }>
   items: Record<string, { name: string; sprite: string; effect: string }>
   modes: Record<Mode, Step[]>
@@ -111,6 +122,8 @@ export interface Encounter {
   kos?: number
   /** Free text — how it died, what it is for, what it still needs. */
   notes?: string
+  /** Its four moves, when you have told the app — the calculator uses them. */
+  moves?: string[]
   at: number
 }
 

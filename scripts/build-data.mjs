@@ -65,6 +65,7 @@ const nameRows = csv(await cached('species_names.csv', `${POKEAPI}/pokemon_speci
 const typeRows = csv(await cached('pokemon_types.csv', `${POKEAPI}/pokemon_types.csv`))
 const typeNames = csv(await cached('types.csv', `${POKEAPI}/types.csv`))
 const statRows = csv(await cached('pokemon_stats.csv', `${POKEAPI}/pokemon_stats.csv`))
+const moveRows = csv(await cached('moves.csv', `${POKEAPI}/moves.csv`))
 
 const typeById = new Map(typeNames.map((t) => [t.id, t.identifier]))
 const speciesById = new Map(speciesRows.map((s) => [s.id, s]))
@@ -882,6 +883,83 @@ function buildExtraTrainers(mode, steps) {
   )
 }
 
+/* -------------------------------------------------------------- move table */
+
+/**
+ * Power, type and damage class for every move, so the app can work out what a
+ * fight actually does to your team rather than guessing from typing alone.
+ *
+ * PokeAPI is the source. Radical Red renames a handful of moves and adds its
+ * own, so those are aliased or declared here; anything still unresolved is
+ * reported by the build and shows in the app as "not in the move data" rather
+ * than being quietly treated as a 0-power move.
+ */
+const DAMAGE_CLASS = { 1: 'status', 2: 'physical', 3: 'special' }
+
+/** Radical Red's move slugs against PokeAPI's. */
+const MOVE_ALIAS = {
+  'vise-grip': 'vice-grip',
+  'king-s-shield': 'kings-shield',
+  'disarm-cry': 'disarming-voice',
+  'drain-kiss': 'draining-kiss',
+  'crafty-guard': 'crafty-shield',
+  'soupercell-slam': 'supercell-slam',
+  'freeze-dry': 'freeze-dry',
+  'natures-madness': 'natures-madness'
+}
+
+/**
+ * Moves Radical Red adds outright. Values read off the in-game move
+ * descriptions; flagged so the UI can say they are hand-entered.
+ */
+const CUSTOM_MOVES = {
+  'dark-hole': { type: 'dark', power: 80, category: 'special', custom: true },
+  'draco-barrage': { type: 'dragon', power: 90, category: 'physical', custom: true },
+  'aqua-fang': { type: 'water', power: 65, category: 'physical', custom: true },
+  'soul-robbery': { type: 'ghost', power: 75, category: 'physical', custom: true }
+}
+
+function buildMoves() {
+  const table = {}
+  for (const row of moveRows) {
+    const category = DAMAGE_CLASS[Number(row.damage_class_id)]
+    if (!category) continue
+    table[row.identifier] = {
+      type: typeById.get(row.type_id) ?? 'normal',
+      power: Number(row.power) || 0,
+      category
+    }
+  }
+
+  // Hidden Power is one move per type in the dumps; all are 60 BP special.
+  for (const type of typeById.values()) {
+    if (type === 'normal' || type === 'fairy' || type === 'shadow' || type === 'unknown') continue
+    table[`hidden-power-${type}`] = { type, power: 60, category: 'special' }
+  }
+
+  for (const [slug, target] of Object.entries(MOVE_ALIAS)) {
+    if (!table[slug] && table[target]) table[slug] = table[target]
+  }
+  Object.assign(table, CUSTOM_MOVES)
+
+  // Radical Red's own rebalances win over the mainline numbers.
+  for (const [slug, patch] of Object.entries(patches.move ?? {})) {
+    const power = Number(patch.power)
+    const existing = table[slug]
+    table[slug] = {
+      ...existing,
+      ...(patch.type ? { type: patch.type.toLowerCase() } : {}),
+      ...(Number.isFinite(power) && power > 0 ? { power } : {}),
+      ...(patch.category ? { category: patch.category.toLowerCase() } : {}),
+      ...(existing ? { patched: true } : {}),
+      ...(patch.effect ? { effect: patch.effect } : {})
+    }
+  }
+  return table
+}
+
+const moveTable = buildMoves()
+
 /* ------------------------------------------------- documented fight order */
 
 /**
@@ -1241,7 +1319,7 @@ const hardcoreOrder = applyFightOrder(
 const game = {
   title: 'Radical Red 4.1',
   generatedAt: new Date().toISOString().slice(0, 10),
-  moves: patches.move ?? {},
+  moves: moveTable,
   abilities: patches.ability ?? {},
   items: patches.item ?? {},
   // Legacy teams anchor the matching, then the 4.1 rosters replace them, then
@@ -1252,6 +1330,22 @@ const game = {
   },
   extras: { normal: normalOrder.remaining, hardcore: hardcoreOrder.remaining }
 }
+
+// A move the calculator cannot price is a fight it will under-report, so the
+// build says how many rather than letting them pass silently.
+const fightMoves = new Set()
+for (const mode of ['normal', 'hardcore']) {
+  const teams = [...game.modes[mode].filter((step) => step.kind === 'boss'), ...game.extras[mode]]
+  for (const fight of teams) {
+    for (const variant of [fight, ...Object.values(fight.variants ?? {})])
+      for (const mon of variant.team ?? []) for (const move of mon.moves) fightMoves.add(move)
+  }
+}
+const unpriced = [...fightMoves].filter((move) => !moveTable[move])
+matchLog.moves = [
+  `${Object.keys(moveTable).length} indexed, ${fightMoves.size - unpriced.length}/${fightMoves.size} on fights priced` +
+    (unpriced.length ? ` — missing: ${unpriced.join(', ')}` : '')
+]
 
 await mkdir(resolve(root, 'src/data'), { recursive: true })
 await writeFile(resolve(root, 'src/data/game.json'), JSON.stringify(game))
@@ -1290,6 +1384,7 @@ for (const entry of matchLog.unverified) console.log('  unverified:', entry)
 for (const entry of matchLog.placed) console.log('  order:', entry)
 for (const entry of matchLog.unplaced) console.log('  unplaced:', entry)
 console.log(`  rivals:   ${matchLog.rivals.length} fights carry starter branches`)
+for (const entry of matchLog.moves) console.log('  moves:   ', entry)
 await writeFile(resolve(cache, 'match-report.json'), JSON.stringify(matchLog, null, 2))
 
 console.log(

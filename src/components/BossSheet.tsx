@@ -5,8 +5,9 @@ import { bestStab, multiplierClass, multiplierLabel } from '../lib/types-chart'
 import type { BossMon, BossStep, Encounter } from '../lib/types'
 import { GROUP_LABELS } from '../lib/display'
 import { Sheet, Sprite, TypeBadge, Types } from './ui'
+import { Calculator } from './Calculator'
 
-type Tab = 'team' | 'matchup'
+type Tab = 'team' | 'calc' | 'matchup'
 
 export function BossSheet({ step, onClose }: { step: BossStep; onClose: () => void }) {
   const run = useRun()
@@ -48,8 +49,11 @@ export function BossSheet({ step, onClose }: { step: BossStep; onClose: () => vo
         <button aria-pressed={tab === 'team'} onClick={() => setTab('team')}>
           Their team ({team.length})
         </button>
+        <button aria-pressed={tab === 'calc'} onClick={() => setTab('calc')}>
+          Calculator
+        </button>
         <button aria-pressed={tab === 'matchup'} onClick={() => setTab('matchup')}>
-          Matchups
+          Type chart
         </button>
       </div>
 
@@ -59,6 +63,8 @@ export function BossSheet({ step, onClose }: { step: BossStep; onClose: () => vo
             <BossMonCard key={`${mon.slug}-${index}`} mon={mon} />
           ))}
         </div>
+      ) : tab === 'calc' ? (
+        <Calculator step={step} />
       ) : (
         <MatchupGrid team={team} yours={yours} />
       )}
