@@ -175,6 +175,18 @@ function dumpSlug(name) {
 
 const DUMP_ALIAS = {
   'arceus-bug': 'arceus',
+  'basculegion-f': 'basculegion-female',
+  flabébé: 'flabebe',
+  meowstic: 'meowstic-male',
+  'meowstic-f': 'meowstic-female',
+  'oinkologne-f': 'oinkologne-female',
+  'oinkologne-m': 'oinkologne-male',
+  'pikachu-surfing': 'pikachu',
+  screamtail: 'scream-tail',
+  'squawkabilly-white': 'squawkabilly-white-plumage',
+  tatsugiri: 'tatsugiri-curly',
+  tornadus: 'tornadus-incarnate',
+  'zygarde-10%': 'zygarde-10',
   basculegion: 'basculegion-male',
   dudunsparce: 'dudunsparce-two-segment',
   landorus: 'landorus-incarnate',
@@ -309,7 +321,7 @@ function docPick(boss, candidates) {
 
 /** Builds a boss team out of a dump entry. */
 function dumpTeam(trainer) {
-  return trainer.team
+  const team = trainer.team
     .map((mon) => {
       const { level = 0, offset } = dumpLevel(mon.level)
       return {
@@ -321,7 +333,14 @@ function dumpTeam(trainer) {
         moves: mon.moves.map(slugify)
       }
     })
-    .filter((mon) => dex[mon.slug])
+
+  // Dropping a member silently is how a four-Pokémon fight quietly becomes a
+  // three-Pokémon fight; an unknown species is a build error, not a shrug.
+  const unknown = team.filter((mon) => !dex[mon.slug]).map((mon) => mon.slug)
+  if (unknown.length) {
+    throw new Error(`${trainer.name} (#${trainer.id}) has un-indexed species: ${unknown.join(', ')}`)
+  }
+  return team
 }
 
 function useDumpTeam(boss, trainer, mode) {
@@ -936,6 +955,37 @@ const DOC_TRAINERS = {
 
 const docKey = (value) => value.toLowerCase().replace(/[^a-z0-9]/g, '')
 
+/** Documented teams indexed by the bare name the sheet's order list uses. */
+const docTeamsByKey = new Map()
+for (const entry of docTeams) {
+  const slot = docTeamsByKey.get(docKey(entry.trainer)) ?? []
+  slot.push(entry)
+  docTeamsByKey.set(docKey(entry.trainer), slot)
+}
+
+/**
+ * The order list names a fight by class and given name ("LASS ANNE"); the team
+ * pages name it by the given name alone. Whichever form the pages use is the
+ * key both sides get counted under.
+ */
+function docTeamKey(rawName) {
+  const mapped = DOC_TRAINERS[rawName] ?? rawName
+  for (const form of [mapped, mapped.split(/\s+/).pop() ?? '']) {
+    const key = docKey(form)
+    if (docTeamsByKey.has(key)) return key
+  }
+  return null
+}
+
+/** Fraction of a documented team that a built fight reproduces. */
+function fightOverlap(fight, docEntry) {
+  const base = (slug) => slug.split('-')[0].replace(/^\?/, '')
+  const theirs = new Set(docEntry.species.map(base))
+  const ours = new Set(fight.team.map((mon) => base(mon.slug)))
+  const shared = [...theirs].filter((slug) => ours.has(slug)).length
+  return shared / Math.max(theirs.size, 1)
+}
+
 /**
  * Moves the mini-bosses the documentation places into the run itself, in the
  * documented order, at the documented location, with the documented level cap
@@ -944,7 +994,7 @@ const docKey = (value) => value.toLowerCase().replace(/[^a-z0-9]/g, '')
  * Fights the sheet names but this build cannot resolve stay in the browsable
  * list rather than being placed on a guess.
  */
-function applyFightOrder(mode, orderedSteps, extraFights, log) {
+function applyFightOrder(mode, orderedSteps, extraFights, log, placements) {
   const routesByName = new Map()
   for (const step of orderedSteps) {
     if (step.kind === 'route') routesByName.set(docKey(step.name), step)
@@ -959,37 +1009,80 @@ function applyFightOrder(mode, orderedSteps, extraFights, log) {
     }
   }
 
+  const order = parseFightOrder()
+  const namesOf = (entry) => entry.name.split('&').map((part) => part.trim())
+
+  // Where the sheet lists a name as many times as the team pages show it, the
+  // two lists describe the same fights in the same order, so the nth listing
+  // and the nth page are the same fight. That is the only thing that tells the
+  // two Rocket grunts apart: they share a name, a class and a level cap, and
+  // differ only in the team on their page.
+  const docSeen = new Map()
+  const aligned = new Set()
+  for (const entry of order) {
+    for (const name of namesOf(entry)) {
+      const key = docTeamKey(name)
+      if (key) docSeen.set(key, (docSeen.get(key) ?? 0) + 1)
+    }
+  }
+  for (const [key, count] of docSeen) {
+    if (docTeamsByKey.get(key).length === count) aligned.add(key)
+  }
+
+  const byId = new Map(extraFights.map((fight) => [fight.id, fight]))
   const taken = new Set()
-  const resolve1 = (rawName) => {
+  const nth = new Map()
+  const resolve1 = (rawName, slot) => {
     const mapped = DOC_TRAINERS[rawName] ?? rawName
+    const key = docTeamKey(rawName)
+    const index = key ? (nth.get(key) ?? 0) : 0
+    if (key) nth.set(key, index + 1)
+
+    // Both dumps number their trainers alike, so hardcore takes whichever
+    // fight normal mode settled on rather than guessing again off teams that
+    // its harder rosters have evolved out of recognition.
+    const mirrored = byId.get(placements.get(slot))
+    if (mirrored && !taken.has(mirrored)) return mirrored
+
+    const docEntry = aligned.has(key) ? docTeamsByKey.get(key)[index] : null
+
     for (const candidate of [mapped, mapped.replace(/^(ACE|BEAUTY)\s+/i, '')]) {
       const options = (byName.get(docKey(candidate)) ?? []).filter((fight) => !taken.has(fight))
       if (options.length === 0) continue
-      // A name like "GRUNT" matches several fights; the sheet only lists the
-      // mini-boss tier, so prefer one that scales with the cap.
+      if (docEntry) {
+        const best = options
+          .map((fight) => ({ fight, score: fightOverlap(fight, docEntry) }))
+          .sort((a, b) => b.score - a.score)[0]
+        if (best.score >= 0.5) return best.fight
+      }
+      // Otherwise a name like "GRUNT" matches several fights; the sheet only
+      // lists the mini-boss tier, so prefer one that scales with the cap.
       return options.find((fight) => fight.scaled) ?? options[0]
     }
     return null
   }
 
   const placed = []
-  for (const entry of parseFightOrder()) {
+  for (const entry of order) {
     const candidates = DOC_PLACES[entry.location] ?? [entry.location]
     const place = candidates.map((name) => routesByName.get(docKey(name))).find(Boolean)
 
     // "LOLA & SHEILA" is two trainers fought back to back in one spot.
-    const names = entry.name.split('&').map((part) => part.trim())
-    const fights = names.map(resolve1).filter(Boolean)
+    const resolved = namesOf(entry)
+      .map((name, index) => ({ slot: `${entry.order}:${index}`, fight: resolve1(name, `${entry.order}:${index}`) }))
+      .filter(({ fight }) => fight)
 
-    if (fights.length === 0 || !place) {
+    if (resolved.length === 0 || !place) {
       // Story fights are already in the run under their own entry; only report
       // the ones that should have landed somewhere and did not.
-      if (fights.length > 0 && !place) log.unplaced.push(`${mode}: ${entry.name} → ${entry.location}?`)
+      if (resolved.length > 0 && !place)
+        log.unplaced.push(`${mode}: ${entry.name} → ${entry.location}?`)
       continue
     }
 
-    for (const fight of fights) {
+    for (const { slot, fight } of resolved) {
       taken.add(fight)
+      placements.set(slot, fight.id)
       fight.optional = entry.optional
       fight.docsCap = entry.cap
       placed.push({ fight, place, order: entry.order })
@@ -1129,17 +1222,20 @@ const hardcoreSteps = resolveScaledLevels(
 applyRivalVariants('normal', normalSteps, matchLog)
 applyRivalVariants('hardcore', hardcoreSteps, matchLog)
 
+const orderAssignments = new Map()
 const normalOrder = applyFightOrder(
   'normal',
   normalSteps,
   buildExtraTrainers('normal', normalSteps),
-  matchLog
+  matchLog,
+  orderAssignments
 )
 const hardcoreOrder = applyFightOrder(
   'hardcore',
   hardcoreSteps,
   buildExtraTrainers('hardcore', hardcoreSteps),
-  matchLog
+  matchLog,
+  orderAssignments
 )
 
 const game = {
