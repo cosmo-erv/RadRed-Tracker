@@ -163,4 +163,11 @@ export interface Save {
   v: 2
   activeId: string
   runs: Run[]
+  /**
+   * Corrections to save-file species numbers, keyed by the number in the file.
+   * Radical Red numbers its own added species differently from the public
+   * engine table this build reads, so a wrong name is fixed once by hand and
+   * remembered for every import after.
+   */
+  speciesFix?: Record<string, Slug>
 }

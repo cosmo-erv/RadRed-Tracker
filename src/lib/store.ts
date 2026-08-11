@@ -63,7 +63,7 @@ function load(): Save {
         const activeId = runs.some((entry) => entry.id === parsed.activeId)
           ? parsed.activeId
           : runs[0].id
-        return { v: 2, activeId, runs }
+        return { v: 2, activeId, runs, speciesFix: parsed.speciesFix ?? {} }
       }
     }
     // A save from before attempts existed becomes the first attempt.
@@ -132,6 +132,15 @@ export const useSave = () => useSyncExternalStore(subscribe, () => save)
 export const actions = {
   rename(name: string) {
     commit({ ...run, name })
+  },
+
+  /**
+   * Remembers that a save-file species number means something other than what
+   * the engine table says, so the next import gets it right on its own.
+   */
+  fixSpecies(speciesId: number, slug: Slug) {
+    save = { ...save, speciesFix: { ...save.speciesFix, [String(speciesId)]: slug } }
+    persist()
   },
 
   /** Switches which attempt is being played. */
@@ -224,7 +233,7 @@ export const actions = {
    * nickname, species and whether it is in the party or the box. Pokémon with
    * no matching encounter are handed back rather than invented a route for.
    */
-  applySave(mons: { slug: Slug; nickname: string; level: number; from: 'party' | number }[]) {
+  applySave(mons: { slug: Slug; nickname: string; level: number; from: 'party' | 'box' }[]) {
     const encounters = { ...run.encounters }
     const claimed = new Set<string>()
     const unmatched: typeof mons = []

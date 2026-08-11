@@ -7,18 +7,24 @@ const SPECIES: Record<string, Slug> = speciesIds as Record<string, Slug>
 /*
  * Reading a Radical Red save.
  *
- * Radical Red is a Fire Red hack on the Complete Fire Red Upgrade engine,
- * which keeps Generation III's save layout: 128 KB holding two 14-sector
- * slots, each sector 4 KB with a footer carrying its id, a checksum and a
- * counter. The newer slot wins. Party Pokémon live in save block 1, boxed
- * ones in the storage block that spans sectors 5 to 13.
+ * Radical Red is a Fire Red hack on the Complete Fire Red Upgrade engine. It
+ * keeps Generation III's outer shape — 128 KB holding two 14-sector slots,
+ * each sector 4 KB with a footer carrying its id, a checksum and a counter,
+ * the newer slot winning — but the Pokémon inside are not vanilla:
  *
- * Each Pokémon's interesting half is 48 bytes encrypted against its own
- * personality value and trainer id, split into four 12-byte substructures
- * whose order is a permutation chosen by that same personality value.
+ *   - They are stored in the clear. Vanilla encrypts each Pokémon's 48 data
+ *     bytes against its personality value and shuffles four substructures into
+ *     one of 24 orders; this engine does neither, and leaves the per-Pokémon
+ *     checksum zeroed.
+ *   - Party members keep the 100-byte record with the 32-byte header, so their
+ *     species sits at 0x20 and their level is stored outright at 0x54.
+ *   - Boxed Pokémon are compressed to 58 bytes with the checksum and padding
+ *     dropped, moving species to 0x1C and experience to 0x20, and carry no
+ *     level — it has to be worked back out of experience and growth rate.
  *
- * Species numbering is the engine's own, not the national dex, so it is
- * resolved through a table generated from the engine's header at build time.
+ * All of that was established by reading a real 4.1 save rather than assumed
+ * from the vanilla format, which is why it disagrees with the documentation
+ * for stock Fire Red.
  */
 
 const SECTOR_SIZE = 0x1000
@@ -29,33 +35,30 @@ const FOOTER_COUNTER = 0xffc
 const SIGNATURE = 0x08012025
 const SECTORS_PER_SLOT = 14
 
-/** Sector ids that make up each block, in the order they concatenate. */
 const SAVE_BLOCK_1 = [1, 2, 3, 4]
 const STORAGE = [5, 6, 7, 8, 9, 10, 11, 12, 13]
 
-/** Fire Red keeps the party count and the party itself here in save block 1. */
 const PARTY_COUNT = 0x0034
 const PARTY = 0x0038
 const PARTY_MON_SIZE = 100
-const BOX_MON_SIZE = 80
+const PARTY_SPECIES = 0x20
+const PARTY_EXP = 0x24
+const PARTY_LEVEL = 0x54
 
-/** Storage: a u32 of "current box", then the boxes themselves. */
+/** Storage opens with a u32 "current box", then the compressed records. */
 const BOX_START = 4
-const BOX_COUNT = 25
-const PER_BOX = 30
+const BOX_MON_SIZE = 58
+const BOX_SPECIES = 0x1c
+const BOX_EXP = 0x20
 
-/** Which substructure sits in which slot, indexed by personality % 24. */
-const ORDERS = [
-  'GAEM', 'GAME', 'GEAM', 'GEMA', 'GMAE', 'GMEA',
-  'AGEM', 'AGME', 'AEGM', 'AEMG', 'AMGE', 'AMEG',
-  'EGAM', 'EGMA', 'EAGM', 'EAMG', 'EMGA', 'EMAG',
-  'MGAE', 'MGEA', 'MAGE', 'MAEG', 'MEGA', 'MEAG'
-]
+const NICKNAME = 0x08
+const NICKNAME_LENGTH = 10
+const LANGUAGE = 0x12
+/** Every real record carries this; stale bytes in an empty slot do not. */
+const LANGUAGE_OK = 0x0202
+/** The most experience any growth rate needs for level 100. */
+const MAX_EXP = 1_640_000
 
-/**
- * Generation III's text encoding. Only the characters a nickname can hold are
- * mapped; anything else becomes empty so a stray byte cannot inject junk.
- */
 const CHARS: Record<number, string> = { 0x00: ' ', 0xae: '-', 0xba: '.', 0xb8: ',' }
 for (let i = 0; i < 10; i++) CHARS[0xa1 + i] = String(i)
 for (let i = 0; i < 26; i++) CHARS[0xbb + i] = String.fromCharCode(65 + i)
@@ -63,11 +66,11 @@ for (let i = 0; i < 26; i++) CHARS[0xd5 + i] = String.fromCharCode(97 + i)
 
 const TERMINATOR = 0xff
 
-function readText(view: DataView, offset: number, length: number): string {
+function readText(bytes: Uint8Array, offset: number, length: number): string {
   let out = ''
   for (let i = 0; i < length; i++) {
-    const byte = view.getUint8(offset + i)
-    if (byte === TERMINATOR) break
+    const byte = bytes[offset + i]
+    if (byte === TERMINATOR || byte === undefined) break
     out += CHARS[byte] ?? ''
   }
   return out.trim()
@@ -105,24 +108,24 @@ function levelFromExp(slug: Slug, exp: number): number {
 }
 
 export interface SaveMon {
+  /** The engine's own species number, kept so a wrong guess can be corrected. */
+  speciesId: number
   slug: Slug
   nickname: string
   level: number
-  /** Where it was: the party, or a box number. */
-  from: 'party' | number
+  from: 'party' | 'box'
 }
 
 export interface SaveRead {
   trainer: string
   party: SaveMon[]
   boxed: SaveMon[]
-  /** Species ids the file held that could not be resolved. */
+  /** Species numbers this build has no name for. */
   unresolved: number[]
 }
 
 export type SaveResult = { ok: true; save: SaveRead } | { ok: false; error: string }
 
-/** Sector map for the newer of the two save slots. */
 function pickSlot(view: DataView): Map<number, number> | null {
   const slots: { counter: number; sectors: Map<number, number> }[] = []
 
@@ -133,6 +136,7 @@ function pickSlot(view: DataView): Map<number, number> | null {
       const base = (slot * SECTORS_PER_SLOT + i) * SECTOR_SIZE
       if (base + SECTOR_SIZE > view.byteLength) break
       if (view.getUint32(base + FOOTER_SIGNATURE, true) !== SIGNATURE) continue
+      // Sectors rotate through the slot, so a sector's position is not its id.
       sectors.set(view.getUint16(base + FOOTER_ID, true), base)
       counter = Math.max(counter, view.getUint32(base + FOOTER_COUNTER, true))
     }
@@ -143,67 +147,57 @@ function pickSlot(view: DataView): Map<number, number> | null {
   return slots.sort((a, b) => b.counter - a.counter)[0].sectors
 }
 
-/** Concatenates the data halves of a block's sectors, in sector-id order. */
 function block(view: DataView, sectors: Map<number, number>, ids: number[]): Uint8Array | null {
-  const parts: Uint8Array[] = []
-  for (const id of ids) {
-    const base = sectors.get(id)
-    if (base === undefined) return null
-    parts.push(new Uint8Array(view.buffer, view.byteOffset + base, SECTOR_DATA))
-  }
-  const out = new Uint8Array(parts.length * SECTOR_DATA)
-  parts.forEach((part, index) => out.set(part, index * SECTOR_DATA))
+  const bases = ids.map((id) => sectors.get(id))
+  if (bases.some((base) => base === undefined)) return null
+  const out = new Uint8Array(bases.length * SECTOR_DATA)
+  bases.forEach((base, index) => {
+    out.set(new Uint8Array(view.buffer, view.byteOffset + base!, SECTOR_DATA), index * SECTOR_DATA)
+  })
   return out
 }
 
-function readMon(bytes: Uint8Array, offset: number, size: number, from: SaveMon['from']) {
-  const view = new DataView(bytes.buffer, bytes.byteOffset + offset, size)
-  const personality = view.getUint32(0x00, true)
-  const otId = view.getUint32(0x04, true)
-  if (personality === 0 && otId === 0) return null
+/**
+ * One record, or null when the slot holds no Pokémon. Three independent
+ * checks keep the residue of deleted Pokémon out: a language field that is
+ * always the same on real records, a species number this build knows, and an
+ * experience value inside the range any growth rate can reach.
+ */
+function readMon(
+  bytes: Uint8Array,
+  offset: number,
+  from: 'party' | 'box',
+  unresolved: Set<number>
+): SaveMon | null {
+  const view = new DataView(bytes.buffer, bytes.byteOffset + offset)
+  if (view.getUint32(0x00, true) === 0) return null
+  if (view.getUint16(LANGUAGE, true) !== LANGUAGE_OK) return null
 
-  // The 48 data bytes are XORed against the trainer id and personality.
-  const key = (otId ^ personality) >>> 0
-  const data = new DataView(new ArrayBuffer(48))
-  for (let i = 0; i < 48; i += 4) {
-    data.setUint32(i, (view.getUint32(0x20 + i, true) ^ key) >>> 0, true)
-  }
-
-  const order = ORDERS[personality % 24]
-  const growth = order.indexOf('G') * 12
-
-  const speciesId = data.getUint16(growth + 0, true)
+  const party = from === 'party'
+  const speciesId = view.getUint16(party ? PARTY_SPECIES : BOX_SPECIES, true)
   if (speciesId === 0) return null
 
-  // Move ids are the engine's own numbering too, and no table for them is
-  // reachable from this build, so movesets are left for you to fill in rather
-  // than imported as whatever mainline move happens to share an index.
-  const experience = data.getUint32(growth + 4, true)
-  const slug = SPECIES[String(speciesId)]
-  if (!slug) return { speciesId, mon: null as SaveMon | null }
+  const exp = view.getUint32(party ? PARTY_EXP : BOX_EXP, true)
+  if (exp > MAX_EXP) return null
 
-  // Party members carry their level outright; boxed ones only experience.
-  const level =
-    from === 'party' && size >= PARTY_MON_SIZE
-      ? view.getUint8(0x54) || levelFromExp(slug, experience)
-      : levelFromExp(slug, experience)
+  const slug = SPECIES[String(speciesId)]
+  if (!slug) {
+    unresolved.add(speciesId)
+    return null
+  }
+
+  const stored = party ? view.getUint8(PARTY_LEVEL) : 0
+  const level = stored > 0 && stored <= 100 ? stored : levelFromExp(slug, exp)
 
   return {
     speciesId,
-    mon: {
-      slug,
-      nickname: readText(view, 0x08, 10),
-      level: Math.min(Math.max(level, 1), 100),
-      from
-    }
+    slug,
+    nickname: readText(bytes, offset + NICKNAME, NICKNAME_LENGTH),
+    level,
+    from
   }
 }
 
-/**
- * Reads a .sav into the party and boxes it holds. Anything that does not look
- * like a Generation III save is rejected by name rather than parsed into
- * nonsense.
- */
 export function readSave(buffer: ArrayBuffer): SaveResult {
   if (buffer.byteLength < SECTORS_PER_SLOT * SECTOR_SIZE) {
     return { ok: false, error: 'That file is too small to be a save — expected at least 64 KB.' }
@@ -221,34 +215,26 @@ export function readSave(buffer: ArrayBuffer): SaveResult {
   const saveBlock = block(view, sectors, SAVE_BLOCK_1)
   if (!saveBlock) return { ok: false, error: 'That save is missing sectors and cannot be read.' }
 
-  // The trainer's name opens save block 2, which is sector 0 on its own.
   const trainerBase = sectors.get(0)
   const trainer =
-    trainerBase === undefined ? '' : readText(new DataView(buffer, trainerBase, SECTOR_DATA), 0, 7)
+    trainerBase === undefined
+      ? ''
+      : readText(new Uint8Array(buffer, trainerBase, SECTOR_DATA), 0, 7)
 
   const unresolved = new Set<number>()
   const party: SaveMon[] = []
   const count = Math.min(new DataView(saveBlock.buffer).getUint32(PARTY_COUNT, true), 6)
-
   for (let i = 0; i < count; i++) {
-    const read = readMon(saveBlock, PARTY + i * PARTY_MON_SIZE, PARTY_MON_SIZE, 'party')
-    if (!read) continue
-    if (read.mon) party.push(read.mon)
-    else unresolved.add(read.speciesId)
+    const mon = readMon(saveBlock, PARTY + i * PARTY_MON_SIZE, 'party', unresolved)
+    if (mon) party.push(mon)
   }
 
   const boxed: SaveMon[] = []
   const storage = block(view, sectors, STORAGE)
   if (storage) {
-    for (let box = 0; box < BOX_COUNT; box++) {
-      for (let slot = 0; slot < PER_BOX; slot++) {
-        const offset = BOX_START + (box * PER_BOX + slot) * BOX_MON_SIZE
-        if (offset + BOX_MON_SIZE > storage.length) break
-        const read = readMon(storage, offset, BOX_MON_SIZE, box + 1)
-        if (!read) continue
-        if (read.mon) boxed.push(read.mon)
-        else unresolved.add(read.speciesId)
-      }
+    for (let offset = BOX_START; offset + BOX_MON_SIZE <= storage.length; offset += BOX_MON_SIZE) {
+      const mon = readMon(storage, offset, 'box', unresolved)
+      if (mon) boxed.push(mon)
     }
   }
 

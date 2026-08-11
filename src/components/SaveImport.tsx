@@ -1,39 +1,54 @@
-import { useRef, useState } from 'react'
-import { dex } from '../lib/game'
-import { actions } from '../lib/store'
+import { useMemo, useRef, useState } from 'react'
+import { DEX, dex } from '../lib/game'
+import { actions, useSave } from '../lib/store'
 import { readSave, type SaveMon, type SaveRead } from '../lib/savefile'
+import type { Slug } from '../lib/types'
 import { Sprite } from './ui'
 
 /**
  * Reads a .sav straight off the emulator and folds it into the run.
  *
- * The file is shown before anything is written: a save is the record of what
- * you are carrying, and it can only be matched to encounters you have already
- * logged, so it is worth seeing what it found before it changes your run.
+ * The file is shown before anything is written. That is not only politeness:
+ * Radical Red numbers the species it adds differently from the engine table
+ * this build reads, so a name can come out wrong, and the preview is where you
+ * put it right. A correction is remembered against that species number and
+ * applied to every import after.
  */
 export function SaveImport({ toast }: { toast: (message: string) => void }) {
+  const save = useSave()
   const fileInput = useRef<HTMLInputElement>(null)
-  const [read, setRead] = useState<SaveRead | null>(null)
+  const [raw, setRaw] = useState<SaveRead | null>(null)
   const [error, setError] = useState('')
+  const [fixing, setFixing] = useState<number | null>(null)
   const [leftOver, setLeftOver] = useState<SaveMon[] | null>(null)
+
+  const fixes = save.speciesFix ?? {}
+  const correct = (mon: SaveMon): SaveMon => {
+    const fix = fixes[String(mon.speciesId)]
+    return fix ? { ...mon, slug: fix } : mon
+  }
+  const read = raw
+    ? { ...raw, party: raw.party.map(correct), boxed: raw.boxed.map(correct) }
+    : null
 
   const load = async (file: File) => {
     setError('')
     setLeftOver(null)
+    setFixing(null)
     const result = readSave(await file.arrayBuffer())
     if (!result.ok) {
-      setRead(null)
+      setRaw(null)
       setError(result.error)
       return
     }
-    setRead(result.save)
+    setRaw(result.save)
   }
 
   const apply = () => {
     if (!read) return
     const { updated, unmatched } = actions.applySave([...read.party, ...read.boxed])
-    setLeftOver(unmatched)
-    setRead(null)
+    setLeftOver(unmatched as SaveMon[])
+    setRaw(null)
     toast(updated > 0 ? `Updated ${updated} Pokémon` : 'Nothing matched your logged encounters')
   }
 
@@ -71,12 +86,24 @@ export function SaveImport({ toast }: { toast: (message: string) => void }) {
             {read.trainer ? `${read.trainer}'s save · ` : ''}
             {read.party.length} in the party, {read.boxed.length} boxed
             {read.unresolved.length
-              ? ` · ${read.unresolved.length} species this app does not know`
+              ? ` · ${read.unresolved.length} species this app has no name for`
               : ''}
           </span>
 
-          <MonList title="Party" mons={read.party} />
-          <MonList title="Boxes" mons={read.boxed} />
+          <p className="tiny dim" style={{ margin: 0 }}>
+            Wrong species? Tap it. Radical Red numbers the Pokémon it added differently from the
+            engine data this app reads, so a few come out as the wrong name — correcting one here
+            teaches it for good.
+          </p>
+
+          <MonList
+            title="Party"
+            mons={read.party}
+            fixing={fixing}
+            onFix={setFixing}
+            fixed={fixes}
+          />
+          <MonList title="Boxes" mons={read.boxed} fixing={fixing} onFix={setFixing} fixed={fixes} />
 
           <p className="tiny dim" style={{ margin: 0 }}>
             These are matched to encounters you have already logged, by evolution family, and update
@@ -89,7 +116,7 @@ export function SaveImport({ toast }: { toast: (message: string) => void }) {
             <button className="btn primary grow" onClick={apply}>
               Update my run
             </button>
-            <button className="btn" onClick={() => setRead(null)}>
+            <button className="btn" onClick={() => setRaw(null)}>
               Cancel
             </button>
           </div>
@@ -116,7 +143,19 @@ export function SaveImport({ toast }: { toast: (message: string) => void }) {
   )
 }
 
-function MonList({ title, mons }: { title: string; mons: SaveMon[] }) {
+function MonList({
+  title,
+  mons,
+  fixing,
+  onFix,
+  fixed
+}: {
+  title: string
+  mons: SaveMon[]
+  fixing: number | null
+  onFix: (id: number | null) => void
+  fixed: Record<string, Slug>
+}) {
   if (mons.length === 0) return null
   return (
     <div className="stack" style={{ gap: 4 }}>
@@ -124,14 +163,85 @@ function MonList({ title, mons }: { title: string; mons: SaveMon[] }) {
         {title} · {mons.length}
       </h3>
       {mons.map((mon, index) => (
-        <div key={`${mon.slug}-${index}`} className="row" style={{ gap: 8 }}>
-          <Sprite slug={mon.slug} size="sm" />
-          <span className="grow truncate small">
-            {mon.nickname ? `${mon.nickname} (${dex(mon.slug).name})` : dex(mon.slug).name}
-          </span>
-          <span className="tiny dim">Lv {mon.level}</span>
+        <div key={`${mon.speciesId}-${index}`} className="stack" style={{ gap: 4 }}>
+          <button
+            className="row"
+            style={{ gap: 8, width: '100%', minHeight: 40, textAlign: 'left' }}
+            onClick={() => onFix(fixing === mon.speciesId ? null : mon.speciesId)}
+          >
+            <Sprite slug={mon.slug} size="sm" />
+            <span className="grow truncate small">
+              {mon.nickname ? `${mon.nickname} (${dex(mon.slug).name})` : dex(mon.slug).name}
+              {fixed[String(mon.speciesId)] ? <span className="tiny dim"> · corrected</span> : null}
+            </span>
+            <span className="tiny dim">Lv {mon.level}</span>
+            <span className="dim" aria-hidden>
+              ›
+            </span>
+          </button>
+          {fixing === mon.speciesId ? (
+            <SpeciesFix
+              speciesId={mon.speciesId}
+              current={mon.slug}
+              onDone={() => onFix(null)}
+            />
+          ) : null}
         </div>
       ))}
+    </div>
+  )
+}
+
+/** Search the dex and pin the right species to this save's number. */
+function SpeciesFix({
+  speciesId,
+  current,
+  onDone
+}: {
+  speciesId: number
+  current: Slug
+  onDone: () => void
+}) {
+  const [query, setQuery] = useState('')
+
+  const results = useMemo(() => {
+    const needle = query.trim().toLowerCase()
+    if (needle.length < 2) return []
+    return Object.keys(DEX)
+      .filter((slug) => DEX[slug].name.toLowerCase().includes(needle))
+      .slice(0, 12)
+  }, [query])
+
+  return (
+    <div className="card stack" style={{ padding: 8, gap: 6 }}>
+      <span className="tiny dim">
+        Save number {speciesId} currently reads as {dex(current).name}. What is it really?
+      </span>
+      <input
+        type="search"
+        placeholder="Search the dex…"
+        value={query}
+        autoCapitalize="none"
+        autoCorrect="off"
+        spellCheck={false}
+        onChange={(event) => setQuery(event.target.value)}
+      />
+      {results.map((slug) => (
+        <button
+          key={slug}
+          className="move-row"
+          onClick={() => {
+            actions.fixSpecies(speciesId, slug)
+            onDone()
+          }}
+        >
+          <Sprite slug={slug} size="sm" />
+          <span className="grow truncate">{DEX[slug].name}</span>
+        </button>
+      ))}
+      <button className="btn small" onClick={onDone}>
+        Leave it
+      </button>
     </div>
   )
 }
