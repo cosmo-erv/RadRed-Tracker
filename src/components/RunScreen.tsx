@@ -9,9 +9,28 @@ import { Sprite } from './ui'
 
 type Filter = 'all' | 'todo' | 'bosses'
 
+/** Matches a step against the search box: its own name, or anything on it. */
+function matches(step: Step, query: string, run: ReturnType<typeof useRun>) {
+  if (!query) return true
+  const haystack: string[] = []
+  if (isBoss(step)) {
+    haystack.push(step.trainer, step.name, GROUP_LABELS[step.group])
+    for (const mon of variantOf(step, run.starter).team) haystack.push(dex(mon.slug).name)
+  } else {
+    haystack.push(step.name)
+    const encounter = run.encounters[step.id]
+    if (encounter?.nickname) haystack.push(encounter.nickname)
+    // Search the species you could still meet here, not just the one you did.
+    for (const slug of encounter?.slug ? [encounter.slug] : step.encounters)
+      haystack.push(dex(slug).name)
+  }
+  return haystack.join(' ').toLowerCase().includes(query)
+}
+
 export function RunScreen() {
   const run = useRun()
   const [filter, setFilter] = useState<Filter>('all')
+  const [query, setQuery] = useState('')
   const [openRoute, setOpenRoute] = useState<RouteStep | null>(null)
   const [shown, setShown] = useState(20)
   const [openBoss, setOpenBoss] = useState<BossStep | null>(null)
@@ -44,14 +63,22 @@ export function RunScreen() {
     return { ordered: list, unplaced: waiting }
   }, [all, miniBosses, run.placements])
 
+  // The unplaced group is part of the run's list, so the search has to reach
+  // it too — a fight you cannot place is exactly one you would search for.
+  const unplacedShown = useMemo(() => {
+    const needle = query.trim().toLowerCase()
+    return unplaced.filter((fight) => matches(fight, needle, run))
+  }, [unplaced, query, run])
+
   const visible = useMemo(() => {
-    if (filter === 'bosses') return ordered.filter(isBoss)
-    if (filter === 'todo')
-      return ordered.filter((step) =>
-        isBoss(step) ? !run.defeated[step.id] : !run.encounters[step.id]
-      )
-    return ordered
-  }, [ordered, filter, run])
+    const needle = query.trim().toLowerCase()
+    return ordered.filter((step) => {
+      if (filter === 'bosses' && !isBoss(step)) return false
+      if (filter === 'todo' && (isBoss(step) ? run.defeated[step.id] : run.encounters[step.id]))
+        return false
+      return matches(step, needle, run)
+    })
+  }, [ordered, filter, query, run])
 
   const percent = Math.round((stats.bosses / Math.max(stats.totalBosses, 1)) * 100)
 
@@ -106,6 +133,16 @@ export function RunScreen() {
           </div>
         </section>
 
+        <input
+          type="search"
+          value={query}
+          placeholder="Find a route, trainer or Pokémon"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+          onChange={(event) => setQuery(event.target.value)}
+        />
+
         <div className="scroller filters">
           {(
             [
@@ -140,18 +177,20 @@ export function RunScreen() {
             )
           )}
           {visible.length === 0 ? (
-            <p className="empty">Nothing left here — try another filter.</p>
+            <p className="empty">
+              {query.trim() ? `Nothing matches “${query.trim()}”.` : 'Nothing left here — try another filter.'}
+            </p>
           ) : null}
         </div>
 
-        {filter !== 'todo' && unplaced.length > 0 ? (
+        {filter !== 'todo' && unplacedShown.length > 0 ? (
           <section className="stack">
             <h2 className="section-title">Mini-bosses · not placed yet</h2>
             <p className="tiny dim" style={{ margin: 0 }}>
               No source lists where these stand. Open one and pin it to the place you met it and it
               will sit there in the run from then on.
             </p>
-            {unplaced.slice(0, shown).map((fight) => (
+            {unplacedShown.slice(0, shown).map((fight) => (
               <BossRow
                 key={fight.id}
                 step={fight}
@@ -160,9 +199,9 @@ export function RunScreen() {
                 onOpen={() => setOpenBoss(fight)}
               />
             ))}
-            {unplaced.length > shown ? (
+            {unplacedShown.length > shown ? (
               <button className="btn block" onClick={() => setShown((value) => value + 20)}>
-                Show more ({unplaced.length - shown} left)
+                Show more ({unplacedShown.length - shown} left)
               </button>
             ) : null}
           </section>
@@ -175,6 +214,10 @@ export function RunScreen() {
   )
 }
 
+/**
+ * One line per route. The species you caught reads inline rather than needing
+ * a tap, which is the difference between scanning the run and walking it.
+ */
 function RouteRow({
   step,
   encounter,
@@ -185,35 +228,34 @@ function RouteRow({
   onOpen: () => void
 }) {
   const meta = encounter ? STATUS_META[encounter.status] : null
+  const species = encounter?.slug ? dex(encounter.slug).name : null
   return (
-    <button className="step" onClick={onOpen}>
-      <EncounterSlot encounter={encounter} />
-      <span className="grow truncate">
-        <span className="title truncate" style={{ display: 'block' }}>
-          {step.name}
-        </span>
-        <span className="meta truncate" style={{ display: 'block' }}>
-          {encounter
-            ? `${encounter.slug ? dex(encounter.slug).name : 'No encounter'}${
-                encounter.nickname ? ` “${encounter.nickname}”` : ''
-              } · ${meta?.label}`
-            : `${step.encounters.length} possible encounters`}
-        </span>
+    <button
+      className={`step tight${encounter ? ` logged status-${encounter.status}` : ''}`}
+      onClick={onOpen}
+    >
+      {encounter?.slug ? (
+        <Sprite
+          slug={encounter.slug}
+          size="sm"
+          className={encounter.status === 'dead' ? 'dead-sprite' : ''}
+        />
+      ) : (
+        <span className="slot sm">{encounter ? '✖' : '+'}</span>
+      )}
+      <span className="title truncate">{step.name}</span>
+      <span className="grow meta truncate" style={{ textAlign: 'right' }}>
+        {encounter
+          ? encounter.nickname && species
+            ? `${encounter.nickname} (${species})`
+            : (species ?? 'Skipped')
+          : `${step.encounters.length} possible`}
       </span>
+      {meta ? <span className={`chip ${meta.tone}`}>{meta.label}</span> : null}
       <span className="dim" aria-hidden>
         ›
       </span>
     </button>
-  )
-}
-
-function EncounterSlot({ encounter }: { encounter?: Encounter }) {
-  if (!encounter) return <span className="slot">+</span>
-  if (!encounter.slug) return <span className="slot filled">✖</span>
-  return (
-    <span className={`slot filled${encounter.status === 'dead' ? ' dead' : ''}`}>
-      <Sprite slug={encounter.slug} size="sm" />
-    </span>
   )
 }
 
@@ -249,15 +291,18 @@ function BossRow({
       <button className="grow truncate" style={{ textAlign: 'left' }} onClick={onOpen}>
         <span className="title truncate" style={{ display: 'block' }}>
           {step.trainer}
+          {step.optional ? <span className="chip tiny-chip">optional</span> : null}
         </span>
         <span className="meta truncate" style={{ display: 'block' }}>
           {GROUP_LABELS[step.group]} · {step.name}
-          {shown.levelCap ? ` · Lv ${shown.levelCap}` : ''}
           {step.verified === false ? ' · 4.0 data' : ''}
         </span>
       </button>
-      <span className="row" style={{ gap: 4 }}>
-        {shown.team.slice(0, 3).map((mon, index) => (
+      {shown.levelCap ? <span className="chip accent">cap {shown.levelCap}</span> : null}
+      {/* The whole team, not the first three: knowing what is coming is the
+          point of the row. Three to a line keeps six inside a phone's width. */}
+      <span className="team-strip">
+        {shown.team.map((mon, index) => (
           <Sprite key={`${mon.slug}-${index}`} slug={mon.slug} size="sm" />
         ))}
       </span>

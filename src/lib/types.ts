@@ -107,6 +107,10 @@ export interface Encounter {
   nickname?: string
   level?: number
   status: Status
+  /** Fights this one has won, kept by hand. */
+  kos?: number
+  /** Free text — how it died, what it is for, what it still needs. */
+  notes?: string
   at: number
 }
 
@@ -133,4 +137,14 @@ export interface Run {
   starter: Starter | null
   startedAt: number
   updatedAt: number
+}
+
+/**
+ * Nuzlockes end. The save holds every attempt so a wipe starts a fresh run
+ * without throwing away the one that just died.
+ */
+export interface Save {
+  v: 2
+  activeId: string
+  runs: Run[]
 }

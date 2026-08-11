@@ -1,5 +1,15 @@
 import { useMemo, useState } from 'react'
-import { bst, dex, levelCap, nextBoss, steps, variantOf } from '../lib/game'
+import {
+  bst,
+  dex,
+  levelCap,
+  nextBoss,
+  STAT_KEYS,
+  STAT_LABELS,
+  statsAt,
+  steps,
+  variantOf
+} from '../lib/game'
 import { actions, PARTY_LIMIT, useRun } from '../lib/store'
 import { bestStab, defensiveProfile, multiplierClass, multiplierLabel } from '../lib/types-chart'
 import type { Encounter, Status } from '../lib/types'
@@ -157,9 +167,29 @@ function MemberCard({
             Lv {encounter.level}
           </span>
         ) : null}
-        <div className="tiny dim">{STATUS_META[encounter.status].label}</div>
+        <div className="tiny dim">
+          {STATUS_META[encounter.status].label}
+          {encounter.kos ? ` · ${encounter.kos} KO${encounter.kos === 1 ? '' : 's'}` : ''}
+        </div>
       </span>
     </button>
+  )
+}
+
+/** Stats as they read in-game, so a card answers "can it take the hit?". */
+function StatLine({ slug, level }: { slug: string; level: number }) {
+  const stats = statsAt(slug, level)
+  if (!stats) return null
+  const best = Math.max(...STAT_KEYS.map((key) => stats[key]))
+  return (
+    <div className="stat-line">
+      {STAT_KEYS.map((key) => (
+        <div key={key}>
+          <div className="key">{STAT_LABELS[key]}</div>
+          <div className={`value${stats[key] === best ? ' top' : ''}`}>{stats[key]}</div>
+        </div>
+      ))}
+    </div>
   )
 }
 
@@ -224,6 +254,47 @@ function MemberSheet({
           }}
         />
       </div>
+
+      {encounter.slug && encounter.level ? (
+        <section className="stack" style={{ gap: 6 }}>
+          <h2 className="section-title">Stats at Lv {encounter.level}</h2>
+          <StatLine slug={encounter.slug} level={encounter.level} />
+          <p className="tiny dim" style={{ margin: 0 }}>
+            31 IVs, no EVs, neutral nature — what it reads before any training.
+          </p>
+        </section>
+      ) : null}
+
+      <div className="spread">
+        <span className="tiny dim">Knockouts</span>
+        <span className="row" style={{ gap: 8 }}>
+          <button
+            className="btn small"
+            aria-label="One fewer KO"
+            onClick={() => actions.addKo(encounter.locId, -1)}
+          >
+            −
+          </button>
+          <strong style={{ minWidth: 24, textAlign: 'center' }}>{encounter.kos ?? 0}</strong>
+          <button
+            className="btn small"
+            aria-label="One more KO"
+            onClick={() => actions.addKo(encounter.locId, 1)}
+          >
+            +
+          </button>
+        </span>
+      </div>
+
+      <label className="stack" style={{ gap: 6 }}>
+        <span className="tiny dim">Notes</span>
+        <textarea
+          rows={2}
+          placeholder="Died to Falkner's Flittle…"
+          value={encounter.notes ?? ''}
+          onChange={(event) => save({ notes: event.target.value || undefined })}
+        />
+      </label>
 
       {encounter.slug ? (
         <EvolvePicker slug={encounter.slug} onChange={(next) => save({ slug: next })} />

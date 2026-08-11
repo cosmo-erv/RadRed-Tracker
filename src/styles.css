@@ -457,6 +457,98 @@ img {
   opacity: 0.55;
 }
 
+/* Route rows carry one line of information, so they get one line of height. */
+.step.tight {
+  min-height: 48px;
+  padding: 6px 10px;
+  gap: 8px;
+}
+
+.step.tight .title {
+  font-size: 14px;
+  flex: 0 1 auto;
+}
+
+.step.logged {
+  border-left: 3px solid var(--status, var(--line));
+}
+
+.step.status-party {
+  --status: var(--good);
+}
+.step.status-box {
+  --status: #4b86c4;
+}
+.step.status-dead {
+  --status: var(--bad);
+}
+.step.status-missed {
+  --status: var(--dim);
+}
+
+/* A whole boss team beside the name: three to a line, two lines, so six fit
+   the right-hand side of a row on an SE without pushing the name out. */
+.team-strip {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-content: center;
+  gap: 0;
+  width: 78px;
+  flex: 0 0 auto;
+}
+
+/* Beats .sprite.sm, which is defined later in this file. */
+.team-strip .sprite.sm {
+  width: 26px;
+  height: 22px;
+  transform: scale(1.4) translateY(-6%);
+}
+
+.tickbox.sm {
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  font-size: 12px;
+}
+
+.stat-line {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 4px;
+  text-align: center;
+  background: var(--bg-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 8px 6px;
+}
+
+.stat-line .key {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--dim);
+}
+
+.stat-line .value {
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-line .value.top {
+  color: var(--accent);
+}
+
+.tiny-chip {
+  padding: 1px 6px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-left: 6px;
+  color: var(--warn);
+}
+
 .step .title {
   font-weight: 600;
   font-size: 15px;
@@ -482,6 +574,13 @@ img {
 .slot.filled {
   border-style: solid;
   background: var(--bg-raised-2);
+}
+
+.slot.sm {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  font-size: 16px;
 }
 
 .slot.dead {

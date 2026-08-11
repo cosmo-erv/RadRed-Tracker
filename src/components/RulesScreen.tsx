@@ -1,14 +1,14 @@
 import { useRef, useState } from 'react'
 import { parsePlacements } from '../lib/placements'
 import { GAME } from '../lib/game'
-import { actions, useRun } from '../lib/store'
+import { actions, useRun, useSave } from '../lib/store'
 import type { Mode, Starter } from '../lib/types'
 import { Sprite, Toggle } from './ui'
 
 export function RulesScreen({ toast }: { toast: (message: string) => void }) {
   const run = useRun()
+  const save = useSave()
   const fileInput = useRef<HTMLInputElement>(null)
-  const [name, setName] = useState(run.name)
 
   const download = () => {
     const blob = new Blob([actions.export()], { type: 'application/json' })
@@ -23,7 +23,11 @@ export function RulesScreen({ toast }: { toast: (message: string) => void }) {
 
   const upload = async (file: File) => {
     const result = actions.import(await file.text())
-    toast(result.ok ? 'Run imported' : result.error)
+    if (!result.ok) {
+      toast(result.error)
+      return
+    }
+    toast(`Imported ${result.added} attempt${result.added === 1 ? '' : 's'}`)
   }
 
   return (
@@ -38,11 +42,45 @@ export function RulesScreen({ toast }: { toast: (message: string) => void }) {
           <h2 className="section-title">Run</h2>
           <div className="card stack" style={{ padding: 12, gap: 12 }}>
             <label className="stack" style={{ gap: 6 }}>
-              <span className="tiny dim">Run name</span>
+              <span className="tiny dim">Attempt</span>
+              <select value={run.id} onChange={(event) => actions.switchRun(event.target.value)}>
+                {save.runs.map((entry) => (
+                  <option key={entry.id} value={entry.id}>
+                    {entry.name}
+                    {entry.id === run.id ? ' (playing)' : ''}
+                  </option>
+                ))}
+              </select>
+              <div className="row" style={{ gap: 8 }}>
+                <button className="btn grow" onClick={() => { actions.newRun(); toast('New attempt started') }}>
+                  + New attempt
+                </button>
+                <button
+                  className="btn danger"
+                  disabled={save.runs.length <= 1}
+                  onClick={() => {
+                    if (confirm(`Delete “${run.name}”? This cannot be undone.`)) {
+                      actions.deleteRun(run.id)
+                      toast('Attempt deleted')
+                    }
+                  }}
+                >
+                  Delete
+                </button>
+              </div>
+              <p className="tiny dim" style={{ margin: 0 }}>
+                Each attempt keeps its own encounters, ticks and starter. A wipe does not cost you
+                the record of the run that died.
+              </p>
+            </label>
+
+            <label className="stack" style={{ gap: 6 }}>
+              <span className="tiny dim">Name this attempt</span>
+              {/* Keyed on the run so switching attempts refills the field. */}
               <input
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-                onBlur={() => actions.rename(name.trim() || 'My Nuzlocke')}
+                key={run.id}
+                defaultValue={run.name}
+                onBlur={(event) => actions.rename(event.target.value.trim() || 'Attempt')}
               />
             </label>
 
@@ -131,14 +169,15 @@ export function RulesScreen({ toast }: { toast: (message: string) => void }) {
           <h2 className="section-title">Save data</h2>
           <div className="card stack" style={{ padding: 12, gap: 10 }}>
             <p className="tiny dim" style={{ margin: 0 }}>
-              Your run lives in this browser. Export a copy before clearing Safari data or moving
-              to another phone.
+              Your attempts live in this browser. Export a copy before clearing Safari data or
+              moving to another phone — the file carries every attempt, and importing adds them
+              alongside what is already here rather than replacing it.
             </p>
             <button className="btn block" onClick={download}>
-              Export run (.json)
+              Export everything (.json)
             </button>
             <button className="btn block" onClick={() => fileInput.current?.click()}>
-              Import run
+              Import
             </button>
             <input
               ref={fileInput}
@@ -154,13 +193,13 @@ export function RulesScreen({ toast }: { toast: (message: string) => void }) {
             <button
               className="btn danger block"
               onClick={() => {
-                if (confirm('Start over? This wipes every encounter and boss tick.')) {
+                if (confirm(`Empty “${run.name}”? This wipes its encounters and boss ticks.`)) {
                   actions.reset()
-                  toast('New run started')
+                  toast('Attempt cleared')
                 }
               }}
             >
-              Start a new run
+              Clear this attempt
             </button>
           </div>
         </section>

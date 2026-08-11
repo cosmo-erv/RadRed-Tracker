@@ -52,6 +52,37 @@ export function variantOf(step: BossStep, starter: Starter | null): BossVariant 
 export const bst = (slug: Slug) =>
   Object.values(dex(slug).stats).reduce((sum, value) => sum + (value ?? 0), 0)
 
+export const STAT_KEYS = ['hp', 'atk', 'def', 'spa', 'spd', 'spe'] as const
+export type StatKey = (typeof STAT_KEYS)[number]
+export const STAT_LABELS: Record<StatKey, string> = {
+  hp: 'HP',
+  atk: 'Atk',
+  def: 'Def',
+  spa: 'SpA',
+  spd: 'SpD',
+  spe: 'Spe'
+}
+
+/**
+ * What a Pokémon's stats actually read at a level. Assumes 31 IVs, no EVs and
+ * a neutral nature — the numbers you get before any training, which is what
+ * matters when you are deciding whether something can take a hit.
+ */
+export function statsAt(slug: Slug, level: number): Record<StatKey, number> | null {
+  if (!level || level < 1) return null
+  const base = dex(slug).stats
+  const out = {} as Record<StatKey, number>
+  for (const key of STAT_KEYS) {
+    const value = base[key]
+    if (value === undefined) return null
+    out[key] =
+      key === 'hp'
+        ? Math.floor(((2 * value + 31) * level) / 100) + level + 10
+        : Math.floor(((2 * value + 31) * level) / 100 + 5)
+  }
+  return out
+}
+
 /** Prettifies a kebab-case data slug: `flame-charge` -> `Flame Charge`. */
 export const label = (slug?: string | null) =>
   (slug ?? '')

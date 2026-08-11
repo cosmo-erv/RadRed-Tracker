@@ -38,6 +38,7 @@ export function BossScreen() {
   const [filter, setFilter] = useState<Filter>('story')
   const [query, setQuery] = useState('')
   const [limit, setLimit] = useState(PAGE)
+  const [hideDone, setHideDone] = useState(false)
   const [open, setOpen] = useState<BossStep | null>(null)
 
   const fights = useMemo(
@@ -50,19 +51,18 @@ export function BossScreen() {
   // Searching looks across every fight, not just the selected filter: the
   // trainer you have just walked into is exactly the one you cannot classify.
   const matches = useMemo(() => {
-    if (term)
-      return fights.filter(
-        (fight) =>
-          fight.trainer.toLowerCase().includes(term) ||
-          fight.name.toLowerCase().includes(term) ||
-          fight.team.some((mon) => mon.slug.includes(term))
-      )
-    return fights.filter((fight) =>
-      filter === 'story' ? !fight.optional : fight.group === filter
-    )
-  }, [fights, filter, term])
+    const pool = term
+      ? fights.filter(
+          (fight) =>
+            fight.trainer.toLowerCase().includes(term) ||
+            fight.name.toLowerCase().includes(term) ||
+            fight.team.some((mon) => mon.slug.includes(term))
+        )
+      : fights.filter((fight) => (filter === 'story' ? !fight.optional : fight.group === filter))
+    return hideDone ? pool.filter((fight) => !run.defeated[fight.id]) : pool
+  }, [fights, filter, term, hideDone, run.defeated])
 
-  useEffect(() => setLimit(PAGE), [filter, query])
+  useEffect(() => setLimit(PAGE), [filter, query, hideDone])
 
   const story = fights.filter((fight) => !fight.optional)
   const miniBosses = fights.filter((fight) => fight.group === 'ace-trainer').length
@@ -95,6 +95,19 @@ export function BossScreen() {
             </button>
           ))}
         </div>
+
+        <button
+          className="row tiny dim"
+          style={{ gap: 8, alignSelf: 'flex-start', minHeight: 32 }}
+          aria-pressed={hideDone}
+          onClick={() => setHideDone((value) => !value)}
+        >
+          <span className={`tickbox sm${hideDone ? ' on' : ''}`} aria-hidden>
+            ✓
+          </span>
+          Hide the ones I have beaten
+          {hideDone ? ` (${fights.filter((f) => run.defeated[f.id]).length} hidden)` : ''}
+        </button>
 
         {term ? (
           <p className="tiny dim" style={{ margin: 0 }}>
@@ -130,18 +143,19 @@ export function BossScreen() {
               >
                 <span className="title truncate" style={{ display: 'block' }}>
                   {fight.trainer}
+                  {fight.optional ? <span className="chip tiny-chip">optional</span> : null}
                 </span>
                 <span className="meta truncate" style={{ display: 'block' }}>
                   {fight.name} · {shown.team.length} Pokémon
-                  {shown.levelCap ? ` · Lv ${shown.levelCap}` : ''}
                   {shown.scaled && !shown.levelCap ? ' · at your cap' : ''}
                   {fight.segment ? ` · before ${fight.segment}` : ''}
                   {fight.verified === false ? ' · 4.0 data' : ''}
                   {run.placements[fight.id] ? ' · placed' : ''}
                 </span>
               </button>
-              <span className="row" style={{ gap: 2 }}>
-                {shown.team.slice(0, 3).map((mon, index) => (
+              {shown.levelCap ? <span className="chip accent">cap {shown.levelCap}</span> : null}
+              <span className="team-strip">
+                {shown.team.map((mon, index) => (
                   <Sprite key={`${mon.slug}-${index}`} slug={mon.slug} size="sm" />
                 ))}
               </span>
