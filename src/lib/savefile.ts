@@ -1,5 +1,5 @@
 import speciesIds from '../data/species-ids.json'
-import { dex } from './game'
+import { DEX, dex, statsAt } from './game'
 import type { Slug } from './types'
 
 const SPECIES: Record<string, Slug> = speciesIds as Record<string, Slug>
@@ -50,6 +50,10 @@ const BOX_START = 4
 const BOX_MON_SIZE = 58
 const BOX_SPECIES = 0x1c
 const BOX_EXP = 0x20
+
+/** Party records carry their computed stats. Note speed precedes attack. */
+const PARTY_STATS = 0x58
+const STAT_ORDER = ['hp', 'atk', 'def', 'spe', 'spa', 'spd'] as const
 
 const NICKNAME = 0x08
 const NICKNAME_LENGTH = 10
@@ -107,6 +111,50 @@ function levelFromExp(slug: Slug, exp: number): number {
   return level
 }
 
+/**
+ * Which species has exactly these stats at this level.
+ *
+ * Radical Red numbers the species it adds differently from any public engine
+ * table, so the species byte alone cannot be trusted for them. A party record
+ * also stores the Pokémon's computed stats, and those are a fingerprint: HP is
+ * untouched by nature, and every other stat is the base value or that value
+ * one tenth up or down. Across a thousand species almost nothing collides, so
+ * an exact hit identifies the Pokémon no matter what its number claims.
+ *
+ * Trained Pokémon carry effort values, which only ever raise a stat, so a save
+ * with training in it will not match exactly — hence null rather than a guess.
+ */
+function identifyByStats(stored: number[], level: number): Slug | null {
+  const matches: Slug[] = []
+
+  for (const slug of Object.keys(DEX)) {
+    const base = statsAt(slug, level)
+    if (!base) continue
+    if (stored[0] !== base.hp) continue
+
+    let raised = 0
+    let lowered = 0
+    let ok = true
+    for (let i = 1; i < STAT_ORDER.length; i++) {
+      const value = base[STAT_ORDER[i]]
+      const got = stored[i]
+      if (got === value) continue
+      if (got === Math.floor(value * 1.1)) raised++
+      else if (got === Math.floor(value * 0.9)) lowered++
+      else {
+        ok = false
+        break
+      }
+    }
+    // A nature raises exactly one stat and lowers one, or does neither.
+    if (!ok || raised > 1 || lowered > 1 || raised !== lowered) continue
+    matches.push(slug)
+    if (matches.length > 1) return null
+  }
+
+  return matches[0] ?? null
+}
+
 export interface SaveMon {
   /** The engine's own species number, kept so a wrong guess can be corrected. */
   speciesId: number
@@ -114,6 +162,8 @@ export interface SaveMon {
   nickname: string
   level: number
   from: 'party' | 'box'
+  /** Set when the stats disagreed with the species number and won. */
+  identified?: boolean
 }
 
 export interface SaveRead {
@@ -122,6 +172,12 @@ export interface SaveRead {
   boxed: SaveMon[]
   /** Species numbers this build has no name for. */
   unresolved: number[]
+  /**
+   * Species numbers the stats proved wrong, and what they really are. Worth
+   * keeping: boxed Pokémon store no stats, so a number identified from one in
+   * the party is the only way to name the same species sitting in a box.
+   */
+  learned: Record<string, Slug>
 }
 
 export type SaveResult = { ok: true; save: SaveRead } | { ok: false; error: string }
@@ -167,7 +223,8 @@ function readMon(
   bytes: Uint8Array,
   offset: number,
   from: 'party' | 'box',
-  unresolved: Set<number>
+  unresolved: Set<number>,
+  learned: Record<string, Slug>
 ): SaveMon | null {
   const view = new DataView(bytes.buffer, bytes.byteOffset + offset)
   if (view.getUint32(0x00, true) === 0) return null
@@ -180,25 +237,63 @@ function readMon(
   const exp = view.getUint32(party ? PARTY_EXP : BOX_EXP, true)
   if (exp > MAX_EXP) return null
 
-  const slug = SPECIES[String(speciesId)]
-  if (!slug) {
+  const named = learned[String(speciesId)] ?? SPECIES[String(speciesId)]
+
+  if (party) {
+    const level = view.getUint8(PARTY_LEVEL)
+    if (level > 0 && level <= 100) {
+      const stats = STAT_ORDER.map((_, i) => view.getUint16(PARTY_STATS + i * 2, true))
+      const identified = identifyByStats(stats, level)
+      // The stats are the Pokémon itself; the number is only a label for it.
+      if (identified && identified !== named) {
+        learned[String(speciesId)] = identified
+        return {
+          speciesId,
+          slug: identified,
+          nickname: readText(bytes, offset + NICKNAME, NICKNAME_LENGTH),
+          level,
+          from,
+          identified: true
+        }
+      }
+      if (named) {
+        return {
+          speciesId,
+          slug: named,
+          nickname: readText(bytes, offset + NICKNAME, NICKNAME_LENGTH),
+          level,
+          from
+        }
+      }
+      if (identified) {
+        learned[String(speciesId)] = identified
+        return {
+          speciesId,
+          slug: identified,
+          nickname: readText(bytes, offset + NICKNAME, NICKNAME_LENGTH),
+          level,
+          from,
+          identified: true
+        }
+      }
+    }
+  }
+
+  if (!named) {
     unresolved.add(speciesId)
     return null
   }
 
-  const stored = party ? view.getUint8(PARTY_LEVEL) : 0
-  const level = stored > 0 && stored <= 100 ? stored : levelFromExp(slug, exp)
-
   return {
     speciesId,
-    slug,
+    slug: named,
     nickname: readText(bytes, offset + NICKNAME, NICKNAME_LENGTH),
-    level,
+    level: party ? view.getUint8(PARTY_LEVEL) || levelFromExp(named, exp) : levelFromExp(named, exp),
     from
   }
 }
 
-export function readSave(buffer: ArrayBuffer): SaveResult {
+export function readSave(buffer: ArrayBuffer, known: Record<string, Slug> = {}): SaveResult {
   if (buffer.byteLength < SECTORS_PER_SLOT * SECTOR_SIZE) {
     return { ok: false, error: 'That file is too small to be a save — expected at least 64 KB.' }
   }
@@ -222,18 +317,23 @@ export function readSave(buffer: ArrayBuffer): SaveResult {
       : readText(new Uint8Array(buffer, trainerBase, SECTOR_DATA), 0, 7)
 
   const unresolved = new Set<number>()
+  // Seeded with anything earlier imports worked out, then added to as the
+  // party's stats identify more of Radical Red's own numbering.
+  const learned: Record<string, Slug> = { ...known }
+
   const party: SaveMon[] = []
   const count = Math.min(new DataView(saveBlock.buffer).getUint32(PARTY_COUNT, true), 6)
   for (let i = 0; i < count; i++) {
-    const mon = readMon(saveBlock, PARTY + i * PARTY_MON_SIZE, 'party', unresolved)
+    const mon = readMon(saveBlock, PARTY + i * PARTY_MON_SIZE, 'party', unresolved, learned)
     if (mon) party.push(mon)
   }
 
+  // Boxes are read after the party so they inherit everything it taught us.
   const boxed: SaveMon[] = []
   const storage = block(view, sectors, STORAGE)
   if (storage) {
     for (let offset = BOX_START; offset + BOX_MON_SIZE <= storage.length; offset += BOX_MON_SIZE) {
-      const mon = readMon(storage, offset, 'box', unresolved)
+      const mon = readMon(storage, offset, 'box', unresolved, learned)
       if (mon) boxed.push(mon)
     }
   }
@@ -245,5 +345,11 @@ export function readSave(buffer: ArrayBuffer): SaveResult {
     }
   }
 
-  return { ok: true, save: { trainer, party, boxed, unresolved: [...unresolved] } }
+  // Only the numbers this read actually worked out, not the ones handed in.
+  const discovered: Record<string, Slug> = {}
+  for (const [id, slug] of Object.entries(learned)) {
+    if (known[id] !== slug) discovered[id] = slug
+  }
+
+  return { ok: true, save: { trainer, party, boxed, unresolved: [...unresolved], learned: discovered } }
 }

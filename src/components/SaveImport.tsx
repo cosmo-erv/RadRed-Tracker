@@ -35,11 +35,16 @@ export function SaveImport({ toast }: { toast: (message: string) => void }) {
     setError('')
     setLeftOver(null)
     setFixing(null)
-    const result = readSave(await file.arrayBuffer())
+    const result = readSave(await file.arrayBuffer(), fixes)
     if (!result.ok) {
       setRaw(null)
       setError(result.error)
       return
+    }
+    // Anything the stats identified is worth keeping: it names the same
+    // species in the boxes, which store no stats of their own.
+    for (const [id, slug] of Object.entries(result.save.learned)) {
+      actions.fixSpecies(Number(id), slug)
     }
     setRaw(result.save)
   }
@@ -91,9 +96,9 @@ export function SaveImport({ toast }: { toast: (message: string) => void }) {
           </span>
 
           <p className="tiny dim" style={{ margin: 0 }}>
-            Wrong species? Tap it. Radical Red numbers the Pokémon it added differently from the
-            engine data this app reads, so a few come out as the wrong name — correcting one here
-            teaches it for good.
+            Radical Red numbers the Pokémon it added differently from any published engine data, so
+            party members are identified from the stats the save stores for them rather than taken
+            on trust. Anything still wrong can be tapped and corrected for good.
           </p>
 
           <MonList
@@ -172,7 +177,11 @@ function MonList({
             <Sprite slug={mon.slug} size="sm" />
             <span className="grow truncate small">
               {mon.nickname ? `${mon.nickname} (${dex(mon.slug).name})` : dex(mon.slug).name}
-              {fixed[String(mon.speciesId)] ? <span className="tiny dim"> · corrected</span> : null}
+              {mon.identified ? (
+                <span className="tiny dim"> · from its stats</span>
+              ) : fixed[String(mon.speciesId)] ? (
+                <span className="tiny dim"> · corrected</span>
+              ) : null}
             </span>
             <span className="tiny dim">Lv {mon.level}</span>
             <span className="dim" aria-hidden>
